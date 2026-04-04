@@ -1,0 +1,2 @@
+# This file ensures the docker/ directory is tracked by git.
+# The postgres-data/ subdirectory is created by Docker and gitignored.
