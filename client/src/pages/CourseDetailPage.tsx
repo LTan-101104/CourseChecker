@@ -184,7 +184,15 @@ export function CourseDetailPage() {
                         <div className="prereq-divider-line" />
                       </div>
                     ) : (
-                      <div key={i} className="prereq-card">
+                      <div
+                        key={i}
+                        className="prereq-card prereq-card-clickable"
+                        onClick={() =>
+                          navigate(
+                            `/course/${encodeURIComponent(item.code)}`,
+                          )
+                        }
+                      >
                         <div className="prereq-card-left">
                           <span className="prereq-card-code">{item.code}</span>
                           <span className="prereq-card-title">

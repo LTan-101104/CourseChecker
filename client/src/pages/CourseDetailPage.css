@@ -197,6 +197,15 @@
   color: #737373;
 }
 
+.prereq-card-clickable {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.prereq-card-clickable:hover {
+  background: #f0f0f0;
+}
+
 .prereq-card-right {
   display: flex;
   align-items: center;
