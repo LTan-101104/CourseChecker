@@ -1,6 +1,10 @@
+import { useNavigate } from "react-router-dom";
 import type { Course } from "../types";
 import { formatRequirement } from "../utils/formatRequirement";
+
 export function CourseCard({ course }: { course: Course }) {
+  const navigate = useNavigate();
+
   return (
     <div className="course-card">
       <div className="card-top">
@@ -17,7 +21,14 @@ export function CourseCard({ course }: { course: Course }) {
         </span>
       </div>
       <div className="card-actions">
-        <button className="view-details-btn">View Details</button>
+        <button
+          className="view-details-btn"
+          onClick={() =>
+            navigate(`/course/${encodeURIComponent(course.courseCode)}`)
+          }
+        >
+          View Details
+        </button>
       </div>
     </div>
   );

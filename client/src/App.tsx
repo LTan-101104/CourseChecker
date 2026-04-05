@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 import { Sidebar } from "./components/Sidebar";
 import { TranscriptPage } from "./pages/TranscriptPage";
 import { CourseSearchPage } from "./pages/CourseSearchPage";
+import { CourseDetailPage } from "./pages/CourseDetailPage";
 import "./App.css";
 
 function AppLayout() {
@@ -26,6 +27,7 @@ function App() {
         <Route element={<AppLayout />}>
           <Route index element={<Placeholder title="Dashboard" />} />
           <Route path="/search" element={<CourseSearchPage />} />
+          <Route path="/course/:courseCode" element={<CourseDetailPage />} />
           <Route path="/eligibility" element={<Placeholder title="Eligibility Check" />} />
           <Route path="/transcript" element={<TranscriptPage />} />
         </Route>

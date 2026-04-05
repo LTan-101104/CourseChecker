@@ -1,0 +1,340 @@
+.detail-page {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  height: 100%;
+  font-family: "Inter", sans-serif;
+}
+
+/* ── Breadcrumb ─────────────────────────── */
+
+.detail-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.breadcrumb-link {
+  font-size: 14px;
+  color: #737373;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.breadcrumb-link:hover {
+  text-decoration: underline;
+}
+
+.breadcrumb-sep {
+  color: #737373;
+  display: flex;
+  align-items: center;
+}
+
+.breadcrumb-current {
+  font-size: 14px;
+  color: #0a0a0a;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ── Content Layout ─────────────────────── */
+
+.detail-content {
+  display: flex;
+  gap: 28px;
+  flex: 1;
+  min-height: 0;
+}
+
+.detail-left {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  flex: 1;
+  min-width: 0;
+}
+
+.detail-right {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 380px;
+  flex-shrink: 0;
+}
+
+/* ── Course Header ──────────────────────── */
+
+.course-header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.back-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  background: #fafafa;
+  cursor: pointer;
+  box-shadow: 0 1px 1.75px rgba(0, 0, 0, 0.05);
+}
+
+.back-btn:hover {
+  background: #f0f0f0;
+}
+
+.detail-course-code {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 32px;
+  font-weight: 600;
+  color: #0a0a0a;
+  letter-spacing: -0.5px;
+}
+
+.detail-course-title {
+  font-size: 18px;
+  font-weight: 500;
+  color: #0a0a0a;
+}
+
+/* ── Divider ────────────────────────────── */
+
+.detail-divider {
+  height: 1px;
+  background: #e5e5e5;
+  width: 100%;
+}
+
+/* ── Description ────────────────────────── */
+
+.detail-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detail-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #737373;
+  letter-spacing: 1px;
+}
+
+.detail-description {
+  font-size: 14px;
+  color: #0a0a0a;
+  line-height: 1.7;
+}
+
+/* ── Prerequisites Section ──────────────── */
+
+.prereq-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.prereq-expression {
+  padding: 14px 20px;
+  background: #f5f5f5;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #0a0a0a;
+  line-height: 1.5;
+}
+
+.prereq-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.prereq-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: #fafafa;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+}
+
+.prereq-card-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.prereq-card-code {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0a0a0a;
+}
+
+.prereq-card-title {
+  font-size: 13px;
+  color: #737373;
+}
+
+.prereq-card-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.prereq-badge-required {
+  font-size: 12px;
+  font-weight: 500;
+  color: #0a0a0a;
+}
+
+.prereq-badge-option {
+  font-size: 12px;
+  font-weight: 500;
+  color: #881c1c;
+}
+
+.prereq-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 8px;
+}
+
+.prereq-divider-line {
+  flex: 1;
+  height: 1px;
+  background: #e5e5e5;
+}
+
+.prereq-divider-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: #737373;
+  white-space: nowrap;
+}
+
+/* ── Right Column Cards ─────────────────── */
+
+.action-card {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px;
+  background: #fafafa;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+}
+
+.action-card-title {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: #0a0a0a;
+}
+
+.action-btn-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 24px;
+  border: none;
+  border-radius: 6px;
+  background: #171717;
+  color: #fafafa;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: "Inter", sans-serif;
+  cursor: pointer;
+}
+
+.action-btn-primary:hover {
+  background: #0a0a0a;
+}
+
+.action-btn-secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 24px;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  background: #fafafa;
+  color: #0a0a0a;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: "Inter", sans-serif;
+  cursor: pointer;
+  box-shadow: 0 1px 1.75px rgba(0, 0, 0, 0.05);
+}
+
+.action-btn-secondary:hover {
+  background: #f0f0f0;
+}
+
+.info-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  background: #fafafa;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+}
+
+.info-card-title {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: #0a0a0a;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.info-label {
+  font-size: 13px;
+  color: #737373;
+}
+
+.info-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0a0a0a;
+}
+
+.info-divider {
+  height: 1px;
+  background: #e5e5e5;
+}
+
+.no-prereq-text {
+  font-size: 14px;
+  color: #737373;
+}
