@@ -127,17 +127,12 @@
 /* ── Results Grid ────────────────────────── */
 
 .results-grid {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
   flex: 1;
   overflow-y: auto;
-}
-
-.results-column {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  gap: 16px;
+  align-content: start;
 }
 
 /* ── Course Card ─────────────────────────── */

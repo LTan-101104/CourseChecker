@@ -1,7 +1,6 @@
 import { useState, useMemo } from "react";
 import { Bell } from "lucide-react";
 import { mockCourses } from "../data/mockCourses";
-import type { Course } from "../types";
 import { CourseCard } from "../components/CourseCard";
 import "./CourseSearchPage.css";
 
@@ -36,12 +35,6 @@ export function CourseSearchPage() {
   function handleOnChange(e: React.ChangeEvent<HTMLInputElement>) {
     setSearchTerm(e.target.value);
   }
-
-  // Split into 3 columns
-  const columns: Course[][] = [[], [], []];
-  filteredCourses.forEach((course, i) => {
-    columns[i % 3].push(course);
-  });
 
   return (
     <div className="search-page">
@@ -91,12 +84,8 @@ export function CourseSearchPage() {
 
       {/* Results Grid */}
       <div className="results-grid">
-        {columns.map((col, colIndex) => (
-          <div className="results-column" key={colIndex}>
-            {col.map((course) => (
-              <CourseCard key={course.id} course={course} />
-            ))}
-          </div>
+        {filteredCourses.map((course) => (
+          <CourseCard key={course.id} course={course} />
         ))}
       </div>
     </div>
