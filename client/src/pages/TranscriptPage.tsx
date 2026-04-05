@@ -99,6 +99,7 @@ export function TranscriptPage() {
       </div>
 
       {/* Add Course Row */}
+      {/* TODO: need to find a way to link this to course search somehow */}
       <div className="add-course-row">
         <div className="add-course-select-wrapper">
           <select

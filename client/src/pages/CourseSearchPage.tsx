@@ -1,24 +1,11 @@
 import { useState, useMemo } from "react";
 import { Bell } from "lucide-react";
 import { mockCourses } from "../data/mockCourses";
-import type { Course, Requirement } from "../types";
+import type { Course } from "../types";
+import { CourseCard } from "../components/CourseCard";
 import "./CourseSearchPage.css";
 
 type Filter = "All" | "COMPSCI" | "MATH";
-
-//! helper function to generate requirement string based on Requirement
-function formatRequirement(req: Requirement): string {
-  switch (req.type) {
-    case "COURSE":
-      return req.requiredCourseCode;
-    case "AND":
-      return req.children.map(formatRequirement).join(" AND ");
-    case "OR": {
-      const inner = req.children.map(formatRequirement).join(" OR ");
-      return `(${inner})`;
-    }
-  }
-}
 
 export function CourseSearchPage() {
   // const [query, setQuery] = useState("");
@@ -83,10 +70,6 @@ export function CourseSearchPage() {
             onChange={(e) => handleOnChange(e)}
           />
         </div>
-        {/* <button className="search-btn" onClick={handleSearch}>
-          <Search size={16} />
-          Search
-        </button> */}
       </div>
 
       {/* Filters */}
@@ -115,29 +98,6 @@ export function CourseSearchPage() {
             ))}
           </div>
         ))}
-      </div>
-    </div>
-  );
-}
-
-function CourseCard({ course }: { course: Course }) {
-  return (
-    <div className="course-card">
-      <div className="card-top">
-        <span className="card-code">{course.courseCode}</span>
-        <span className="card-credits">{course.credits} cr</span>
-      </div>
-      <div className="card-title">{course.title}</div>
-      <div className="card-prereq">
-        <span className="prereq-label">Prerequisites</span>
-        <span className="prereq-value">
-          {course.prerequisite
-            ? formatRequirement(course.prerequisite)
-            : "None"}
-        </span>
-      </div>
-      <div className="card-actions">
-        <button className="view-details-btn">View Details</button>
       </div>
     </div>
   );
