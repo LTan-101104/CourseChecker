@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 import { Sidebar } from "./components/Sidebar";
+import { TranscriptPage } from "./pages/TranscriptPage";
 import "./App.css";
 
 function AppLayout() {
@@ -25,7 +26,7 @@ function App() {
           <Route index element={<Placeholder title="Dashboard" />} />
           <Route path="/search" element={<Placeholder title="Course Search" />} />
           <Route path="/eligibility" element={<Placeholder title="Eligibility Check" />} />
-          <Route path="/transcript" element={<Placeholder title="My Transcript" />} />
+          <Route path="/transcript" element={<TranscriptPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
