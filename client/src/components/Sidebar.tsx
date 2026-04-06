@@ -30,6 +30,14 @@ export function Sidebar() {
   const location = useLocation();
   const { studentId } = useAuth();
 
+  function isActivePath(itemPath: string) {
+    if (itemPath === "/search" && location.pathname.startsWith("/course")) {
+      return true;
+    }
+
+    return itemPath === location.pathname;
+  }
+
   return (
     <aside className="sidebar">
       {/* Header */}
@@ -50,7 +58,7 @@ export function Sidebar() {
           <Link
             key={item.path}
             to={item.path}
-            className={`nav-item ${location.pathname === item.path ? "active" : ""}`}
+            className={`nav-item ${isActivePath(item.path) ? "active" : ""}`}
           >
             <div className="nav-item-left">
               <item.icon size={16} />
@@ -64,7 +72,7 @@ export function Sidebar() {
           <Link
             key={item.path}
             to={item.path}
-            className={`nav-item ${location.pathname === item.path ? "active" : ""}`}
+            className={`nav-item ${isActivePath(item.path) ? "active" : ""}`}
           >
             <div className="nav-item-left">
               <item.icon size={16} />
@@ -76,9 +84,7 @@ export function Sidebar() {
 
       {/* Footer */}
       <div className="sidebar-footer">
-        <div className="user-avatar">
-          {studentId.charAt(0).toUpperCase()}
-        </div>
+        <div className="user-avatar">{studentId.charAt(0).toUpperCase()}</div>
         <div className="user-info">
           <span className="user-name">John Doe</span>
           <span className="user-email">jdoe@umass.edu</span>
