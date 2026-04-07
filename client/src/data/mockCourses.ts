@@ -120,4 +120,46 @@ export const mockCourses: Course[] = [
     description: "Vectors, matrices, linear transformations, and eigenvalues.",
     prerequisite: { type: "COURSE", requiredCourseCode: "MATH 132" },
   },
+  {
+    id: 13, 
+    courseCode: "COMPSCI 453",
+    title: "Computer Networks",
+    credits: 3,
+    description: "Introduction to fundamental concepts in the design and implementation of computer networks, their protocols, and applications with a particular emphasis on the Internet's TCP/IP protocol suite.",
+    prerequisite: {type : "COURSE", requiredCourseCode: "COMPSCI 230"}
+  },
+  {
+    id: 14, 
+    courseCode: "COMPSCI 320",
+    title: "Introduction to Software Engineering",
+    credits: 3,
+    description: "This course include requirements analysis, specification, design, abstraction, programming style, testing, maintenance, communication, teamwork, and software project management.",
+    prerequisite: { type: "COURSE", requiredCourseCode: "COMPSCI 220" },
+  },
+  {
+    id: 15, 
+    courseCode: "COMPSCI 325",
+    title: "Introduction to Human Computer Interaction",
+    credits: 3,
+    description: "This course adopts a human-centered design (HCD) approach and teaches a highly iterative process called design thinking.",
+    prerequisite: { type: "COURSE", requiredCourseCode: "COMPSCI 187" },
+  },
+  { // SYNTHETIC DATA ONLY FOR TESTING, PREQS NOT ACCURATE
+    id: 16, 
+    courseCode: "COMPSCI 621",
+    title: "Advanced Software Engineering: Analysis and Evaluation",
+    credits: 3,
+    description: "An evalutation of state-of-the-art practices for software testing and analysis.",
+    prerequisite: { type: "AND", children: [
+      { type: "COURSE", requiredCourseCode: "COMPSCI 187" },
+      {
+        type: "OR",
+        children: [
+          { type: "COURSE", requiredCourseCode: "COMPSCI 320" },
+          { type: "COURSE", requiredCourseCode: "COMPSCI 325" },
+        ],
+      }
+    ]}
+  },
+
 ];

@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 import { Sidebar } from "./components/Sidebar";
+import { EligibilityCheckPage } from "./pages/EligibilityCheckPage";
 import { TranscriptPage } from "./pages/TranscriptPage";
 import { CourseSearchPage } from "./pages/CourseSearchPage";
 import { CourseDetailPage } from "./pages/CourseDetailPage";
@@ -28,7 +29,7 @@ function App() {
           <Route index element={<Placeholder title="Dashboard" />} />
           <Route path="/search" element={<CourseSearchPage />} />
           <Route path="/course/:courseCode" element={<CourseDetailPage />} />
-          <Route path="/eligibility" element={<Placeholder title="Eligibility Check" />} />
+          <Route path="/eligibility" element={<EligibilityCheckPage />} />
           <Route path="/transcript" element={<TranscriptPage />} />
         </Route>
       </Routes>
