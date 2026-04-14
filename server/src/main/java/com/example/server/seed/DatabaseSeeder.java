@@ -153,9 +153,21 @@ public class DatabaseSeeder implements CommandLineRunner {
         List<CourseDataProvider.CompletedCourseDefinition> definitions =
             dataProvider.getCompletedCourseDefinitions();
 
+        java.util.Set<String> studentIds = new java.util.LinkedHashSet<>();
+        for (CourseDataProvider.CompletedCourseDefinition def : definitions) {
+            studentIds.add(def.studentId());
+        }
+
+        java.util.Map<String, User> usersByStudentId = new java.util.HashMap<>();
+        for (User user : userRepository.findAll()) {
+            if (studentIds.contains(user.getStudentId())) {
+                usersByStudentId.put(user.getStudentId(), user);
+            }
+        }
+
         java.util.Set<String> missingStudentIds = new java.util.LinkedHashSet<>();
         for (CourseDataProvider.CompletedCourseDefinition def : definitions) {
-            if (userRepository.findByStudentId(def.studentId()).isEmpty()) {
+            if (!usersByStudentId.containsKey(def.studentId())) {
                 missingStudentIds.add(def.studentId());
             }
         }
@@ -184,7 +196,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                 continue;
             }
 
-            User user = userRepository.findByStudentId(def.studentId()).orElseThrow();
+            User user = usersByStudentId.get(def.studentId());
 
             CompletedCourse cc = new CompletedCourse(
                 user,
