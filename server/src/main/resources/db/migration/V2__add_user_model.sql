@@ -33,7 +33,7 @@ ALTER TABLE completed_course
     ADD CONSTRAINT fk_completed_course_user
     FOREIGN KEY (user_id) REFERENCES app_user(id) ON DELETE CASCADE;
 
-CREATE INDEX idx_completed_user ON completed_course(user_id);
+CREATE INDEX idx_completed_user_course_code ON completed_course(user_id, course_code);
 
 DROP INDEX IF EXISTS idx_completed_student;
 
