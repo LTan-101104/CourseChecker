@@ -161,11 +161,10 @@ public class DatabaseSeeder implements CommandLineRunner {
         }
 
         if (!missingStudentIds.isEmpty()) {
-            log.error(
+            throw new IllegalStateException(
                 "Cannot seed transcript entries for missing users. Add these studentIds to "
                     + "getUserDefinitions() or remove/fix the corresponding transcript entries "
-                    + "in getCompletedCourseDefinitions(): {}",
-                missingStudentIds
+                    + "in getCompletedCourseDefinitions(): " + missingStudentIds
             );
         }
 
