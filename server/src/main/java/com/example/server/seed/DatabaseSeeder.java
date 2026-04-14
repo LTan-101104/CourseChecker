@@ -114,16 +114,24 @@ public class DatabaseSeeder implements CommandLineRunner {
         List<CourseDataProvider.UserDefinition> definitions = dataProvider.getUserDefinitions();
 
         for (CourseDataProvider.UserDefinition def : definitions) {
-            User user = userRepository.findByStudentId(def.studentId())
-                .orElseGet(() -> new User(
+            User user = userRepository.findByStudentId(def.studentId()).orElse(null);
+            boolean isNewUser = user == null;
+
+            if (isNewUser) {
+                user = new User(
                     def.studentId(),
                     def.displayName(),
                     def.email(),
                     def.passwordHash()
-                ));
-
-            user.setDisplayName(def.displayName());
-            user.setEmail(def.email());
+                );
+            } else {
+                if (isNullOrBlank(user.getDisplayName()) && !isNullOrBlank(def.displayName())) {
+                    user.setDisplayName(def.displayName());
+                }
+                if (isNullOrBlank(user.getEmail()) && !isNullOrBlank(def.email())) {
+                    user.setEmail(def.email());
+                }
+            }
 
             // Preserve any real password hash if the seed payload leaves it null.
             if (def.passwordHash() != null || user.getPasswordHash() == null) {
@@ -133,6 +141,10 @@ public class DatabaseSeeder implements CommandLineRunner {
             userRepository.save(user);
             log.info("✅ Seeded user: {}", def.studentId());
         }
+    }
+
+    private boolean isNullOrBlank(String value) {
+        return value == null || value.isBlank();
     }
 
     // ── Transcript Seeding ──────────────────────────────────
