@@ -10,7 +10,7 @@ import com.example.server.model.CompletedCourse;
 @Repository
 public interface CompletedCourseRepository extends JpaRepository<CompletedCourse, Long> {
 
-    List<CompletedCourse> findByStudentId(String studentId);
+    List<CompletedCourse> findByUserStudentId(String studentId);
 
-    boolean existsByStudentIdAndCourseCode(String studentId, String courseCode);
+    boolean existsByUserStudentIdAndCourseCode(String studentId, String courseCode);
 }

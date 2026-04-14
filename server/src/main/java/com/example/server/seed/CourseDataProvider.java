@@ -23,9 +23,24 @@ public interface CourseDataProvider {
     List<CourseDefinition> getCourseDefinitions();
 
     /**
+     * Returns canonical user data used by seed transcript rows.
+     */
+    List<UserDefinition> getUserDefinitions();
+
+    /**
      * Returns mock student transcript data for testing.
      */
     List<CompletedCourseDefinition> getCompletedCourseDefinitions();
+
+    /**
+     * Simple record for a seeded user.
+     */
+    record UserDefinition(
+        String studentId,
+        String displayName,
+        String email,
+        String passwordHash
+    ) {}
 
     /**
      * Simple record for a completed course entry in seed data.
