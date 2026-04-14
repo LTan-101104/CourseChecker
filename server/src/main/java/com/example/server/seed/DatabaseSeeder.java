@@ -153,6 +153,22 @@ public class DatabaseSeeder implements CommandLineRunner {
         List<CourseDataProvider.CompletedCourseDefinition> definitions =
             dataProvider.getCompletedCourseDefinitions();
 
+        java.util.Set<String> missingStudentIds = new java.util.LinkedHashSet<>();
+        for (CourseDataProvider.CompletedCourseDefinition def : definitions) {
+            if (userRepository.findByStudentId(def.studentId()).isEmpty()) {
+                missingStudentIds.add(def.studentId());
+            }
+        }
+
+        if (!missingStudentIds.isEmpty()) {
+            log.error(
+                "Cannot seed transcript entries for missing users. Add these studentIds to "
+                    + "getUserDefinitions() or remove/fix the corresponding transcript entries "
+                    + "in getCompletedCourseDefinitions(): {}",
+                missingStudentIds
+            );
+        }
+
         for (CourseDataProvider.CompletedCourseDefinition def : definitions) {
             if (completedCourseRepository.existsByUserStudentIdAndCourseCode(
                     def.studentId(), def.courseCode())) {
@@ -161,10 +177,15 @@ public class DatabaseSeeder implements CommandLineRunner {
                 continue;
             }
 
-            User user = userRepository.findByStudentId(def.studentId())
-                .orElseThrow(() -> new IllegalStateException(
-                    "Missing seeded user for transcript studentId " + def.studentId()
-                ));
+            if (missingStudentIds.contains(def.studentId())) {
+                log.warn(
+                    "⏭  Skipping transcript entry {}/{} because user {} is missing.",
+                    def.studentId(), def.courseCode(), def.studentId()
+                );
+                continue;
+            }
+
+            User user = userRepository.findByStudentId(def.studentId()).orElseThrow();
 
             CompletedCourse cc = new CompletedCourse(
                 user,
