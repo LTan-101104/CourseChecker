@@ -1,5 +1,5 @@
 -- ============================================================
--- V2: Add user model and link transcript rows to app users
+-- V3: Add user model and link transcript rows to app users
 -- ============================================================
 
 CREATE TABLE app_user (

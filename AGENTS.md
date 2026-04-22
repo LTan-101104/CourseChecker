@@ -10,7 +10,7 @@
 ```
 ┌────────────────┐     HTTP/REST     ┌────────────────────┐     JDBC     ┌──────────────┐
 │  Vite + React  │ ◄──────────────► │  Spring Boot 4 API  │ ◄──────────► │  PostgreSQL  │
-│  (TypeScript)  │    localhost:5173 │  (Java 17 + JPA)    │  :5432      │  (Alpine)    │
+│  (TypeScript)  │    localhost:5173 │  (Java 17 + JPA)    │  :5433      │  (Alpine)    │
 │   client/      │                  │   server/            │              │  Docker      │
 └────────────────┘                  └────────────────────┘              └──────────────┘
 ```
@@ -82,7 +82,7 @@ docker compose down -v && rm -rf docker/postgres-data
 | Property | Value              |
 |----------|--------------------|
 | Host     | localhost          |
-| Port     | 5432               |
+| Port     | 5433               |
 | Database | coursechecker_db   |
 | Username | coursechecker      |
 | Password | coursechecker      |
