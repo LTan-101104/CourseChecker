@@ -25,6 +25,14 @@ import org.springframework.stereotype.Component;
 public class MockCourseDataProvider implements CourseDataProvider {
 
     @Override
+    public List<UserDefinition> getUserDefinitions() {
+        return List.of(
+            new UserDefinition("student-001", "John Doe", "jdoe@umass.edu", null),
+            new UserDefinition("student-002", "Jane Smith", "jsmith@umass.edu", null)
+        );
+    }
+
+    @Override
     public List<CourseDefinition> getCourseDefinitions() {
         return List.of(
 
