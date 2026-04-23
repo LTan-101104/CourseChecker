@@ -2,10 +2,10 @@ import { useState, useMemo } from "react";
 import { Bell, BookOpen, CheckCircle2, XCircle, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { mockTranscripts } from "../data/mockTranscripts";
+import { useCompletedCourses } from "../context/CompletedCoursesContext";
 import { mockCourses } from "../data/mockCourses";
 import { evaluateEligibility } from "../data/eligibilityEvaluator";
-import type { Course } from "../types";
+import type { Course, Transcript } from "../types";
 import "./DashboardPage.css";
 
 const courseCreditsMap = new Map(
@@ -14,11 +14,14 @@ const courseCreditsMap = new Map(
 const courseTitleMap = new Map(mockCourses.map((c) => [c.courseCode, c.title]));
 
 export function DashboardPage() {
-  const { studentId } = useAuth();
-  const transcript = useMemo(
-    () =>
-      mockTranscripts[studentId] ?? { studentId, completedCourses: [] },
-    [studentId],
+  const { user } = useAuth();
+  const { courses, loading } = useCompletedCourses();
+  const transcript = useMemo<Transcript>(
+    () => ({
+      studentId: user?.studentId ?? "guest",
+      completedCourses: courses,
+    }),
+    [courses, user?.studentId],
   );
 
   const [query, setQuery] = useState("");
@@ -69,8 +72,15 @@ export function DashboardPage() {
   // Recent transcript (last 5 courses)
   const recentCourses = transcript.completedCourses.slice(-5).reverse();
 
-  // Avatar initials from studentId (use "JD" as fallback)
-  const avatarInitials = studentId === "student-001" ? "JD" : studentId.slice(0, 2).toUpperCase();
+  // Avatar initials from current authenticated user.
+  const avatarInitials = user?.displayName
+    ? user.displayName
+        .split(" ")
+        .map((part) => part.charAt(0))
+        .join("")
+        .slice(0, 2)
+        .toUpperCase()
+    : "G";
 
   function handleSelectCourse(course: Course) {
     setSelectedCourse(course);
@@ -83,9 +93,13 @@ export function DashboardPage() {
       {/* Header */}
       <div className="dashboard-header">
         <div className="dashboard-header-left">
-          <h1 className="dashboard-title">Welcome back, John</h1>
+          <h1 className="dashboard-title">
+            Welcome back, {user?.displayName ?? "Student"}
+          </h1>
           <p className="dashboard-subtitle">
-            Here's your course eligibility overview
+            {loading
+              ? "Syncing your transcript..."
+              : "Here's your course eligibility overview"}
           </p>
         </div>
         <div className="dashboard-header-right">

@@ -109,6 +109,7 @@
   padding: 8px;
   border-radius: 6px;
   background: #fafafa;
+  flex-wrap: wrap;
 }
 
 .user-avatar {
@@ -143,4 +144,17 @@
   font-weight: 400;
   color: #09090b;
   line-height: 1.67;
+}
+
+.auth-action-btn {
+  margin-left: auto;
+  border: 1px solid #d4d4d8;
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: #fff;
+  color: #222;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
 }

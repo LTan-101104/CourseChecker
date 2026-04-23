@@ -7,6 +7,7 @@ import {
   Plus,
   ArrowRight,
 } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 import { mockCourses } from "../data/mockCourses";
 import { formatRequirement } from "../utils/formatRequirement";
 import type { Requirement } from "../types";
@@ -102,6 +103,7 @@ function buildPrereqItems(req: Requirement): PrereqItem[] {
 }
 
 export function CourseDetailPage() {
+  const { user } = useAuth();
   const { courseCode } = useParams<{ courseCode: string }>();
   const navigate = useNavigate();
 
@@ -138,7 +140,9 @@ export function CourseDetailPage() {
         </div>
         <div className="topbar-right">
           <Bell size={20} color="#737373" />
-          <div className="header-avatar">JD</div>
+          <div className="header-avatar">
+            {user?.displayName?.charAt(0).toUpperCase() ?? "G"}
+          </div>
         </div>
       </div>
 
