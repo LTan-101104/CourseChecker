@@ -14,8 +14,10 @@ import com.example.server.seed.RequirementDefinition;
 public class PdfCourseCatalogParser {
 
     private static final Pattern HEADER_PATTERN = Pattern.compile(
-        "^(?<code>[A-Z]{2,}\\s*\\d{3}[A-Z]?)\\s*[-:]?\\s*(?<title>.+?)\\s*\\((?<credits>\\d+)\\s*CREDITS?\\)\\s*$"
+        "^(?<code>[A-Z]{2,}\\s*\\d{3}[A-Z]?)\\s{2,}(?<title>.+?)\\s*$"
     );
+    private static final Pattern CREDITS_PATTERN = Pattern.compile("(?i)(?<credits>\\d+)\\s+credits?\\.");
+    private static final Pattern PREREQ_PATTERN = Pattern.compile("(?i)prerequisite[s]?:\\s*(?<prereq>.*?)(?:\\.\\s|$)");
 
     private final RequirementExpressionParser requirementExpressionParser;
 
@@ -59,7 +61,7 @@ public class PdfCourseCatalogParser {
     private List<CourseBlock> splitIntoBlocks(String text) {
         List<CourseBlock> blocks = new ArrayList<>();
         String[] lines = text.split("\\R");
-        CourseBlockBuilder current = null;
+        List<String> pendingLines = new ArrayList<>();
 
         for (String rawLine : lines) {
             String line = rawLine.trim();
@@ -67,34 +69,19 @@ public class PdfCourseCatalogParser {
                 continue;
             }
 
-            Matcher matcher = HEADER_PATTERN.matcher(line.toUpperCase());
+            Matcher matcher = HEADER_PATTERN.matcher(line);
             if (matcher.matches()) {
-                if (current != null) {
-                    blocks.add(current.build());
-                }
-                current = new CourseBlockBuilder(
+                CourseBlockBuilder current = new CourseBlockBuilder(
                     normalizeCourseCode(matcher.group("code")),
-                    line.substring(0, line.lastIndexOf('(')).replaceFirst("^[A-Z]{2,}\\s*\\d{3}[A-Z]?\\s*[-:]?\\s*", "").trim(),
-                    Integer.valueOf(matcher.group("credits"))
+                    matcher.group("title").trim()
                 );
+                current.consumePendingLines(pendingLines);
+                blocks.add(current.build());
+                pendingLines.clear();
                 continue;
             }
 
-            if (current == null) {
-                continue;
-            }
-
-            if (line.toUpperCase().startsWith("PREREQUISITE")
-                || line.toUpperCase().startsWith("PREREQUISITES")
-                || line.toUpperCase().startsWith("PREREQ")) {
-                current.setPrerequisiteText(line);
-            } else {
-                current.appendDescription(line);
-            }
-        }
-
-        if (current != null) {
-            blocks.add(current.build());
+            pendingLines.add(line);
         }
 
         return blocks;
@@ -115,14 +102,40 @@ public class PdfCourseCatalogParser {
     private static class CourseBlockBuilder {
         private final String courseCode;
         private final String title;
-        private final Integer credits;
         private final StringBuilder description = new StringBuilder();
+        private Integer credits;
         private String prerequisiteText;
 
-        private CourseBlockBuilder(String courseCode, String title, Integer credits) {
+        private CourseBlockBuilder(String courseCode, String title) {
             this.courseCode = courseCode;
             this.title = title;
-            this.credits = credits;
+        }
+
+        private void consumePendingLines(List<String> pendingLines) {
+            for (String line : pendingLines) {
+                if (line.endsWith("INSTRUCTOR(S):") || line.contains("INSTRUCTOR(S):")) {
+                    continue;
+                }
+                appendDescription(line);
+            }
+            String normalizedDescription = description.toString();
+            Matcher creditsMatcher = CREDITS_PATTERN.matcher(normalizedDescription);
+            if (creditsMatcher.find()) {
+                this.credits = Integer.valueOf(creditsMatcher.group("credits"));
+            }
+            Matcher prereqMatcher = PREREQ_PATTERN.matcher(normalizedDescription);
+            if (prereqMatcher.find()) {
+                this.prerequisiteText = prereqMatcher.group("prereq").trim();
+            }
+            trimPreamble();
+        }
+
+        private void trimPreamble() {
+            String normalized = description.toString()
+                .replaceFirst("^Course Descriptions\\s+\\d{4}\\s+Spring.*?UMassAmherst\\s*", "")
+                .trim();
+            description.setLength(0);
+            description.append(normalized);
         }
 
         private void appendDescription(String line) {
@@ -130,10 +143,6 @@ public class PdfCourseCatalogParser {
                 description.append(' ');
             }
             description.append(line);
-        }
-
-        private void setPrerequisiteText(String prerequisiteText) {
-            this.prerequisiteText = prerequisiteText;
         }
 
         private CourseBlock build() {
