@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { Bell } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 import { mockCourses } from "../data/mockCourses";
 import { CourseCard } from "../components/CourseCard";
 import "./CourseSearchPage.css";
@@ -7,6 +8,7 @@ import "./CourseSearchPage.css";
 type Filter = "All" | "COMPSCI" | "MATH";
 
 export function CourseSearchPage() {
+  const { user } = useAuth();
   // const [query, setQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<Filter>("All");
   const [searchTerm, setSearchTerm] = useState("");
@@ -48,7 +50,9 @@ export function CourseSearchPage() {
         </div>
         <div className="search-header-right">
           <Bell size={20} color="#737373" />
-          <div className="header-avatar">JD</div>
+          <div className="header-avatar">
+            {user?.displayName?.charAt(0).toUpperCase() ?? "G"}
+          </div>
         </div>
       </div>
 

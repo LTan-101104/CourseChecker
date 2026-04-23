@@ -1,11 +1,11 @@
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Bell, Plus, Trash2, ChevronsUpDown } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { mockTranscripts } from "../data/mockTranscripts";
+import { ApiError } from "../api/client";
+import { useCompletedCourses } from "../context/CompletedCoursesContext";
 import { mockCourses } from "../data/mockCourses";
-import type { CompletedCourse } from "../types";
 import "./TranscriptPage.css";
-//TODO: need to replace many of these when having proper backend API
+
 const PAGE_SIZE = 9;
 
 const courseTitleMap = new Map(mockCourses.map((c) => [c.courseCode, c.title]));
@@ -14,14 +14,11 @@ const courseCreditsMap = new Map(
 );
 
 export function TranscriptPage() {
-  const { studentId } = useAuth();
-  const transcript = mockTranscripts[studentId];
-
-  const [courses, setCourses] = useState<CompletedCourse[]>(
-    transcript?.completedCourses ?? [],
-  );
+  const { user } = useAuth();
+  const { courses, loading, error, addCourse, removeCourse } = useCompletedCourses();
   const [page, setPage] = useState(0); // page state for page navigation
   const [selectedCourse, setSelectedCourse] = useState("");
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Stats
   const totalCourses = courses.length;
@@ -38,7 +35,11 @@ export function TranscriptPage() {
 
   // Pagination
   const totalPages = Math.ceil(courses.length / PAGE_SIZE);
-  const pagedCourses = courses.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  const currentPage = Math.min(page, Math.max(totalPages - 1, 0));
+  const pagedCourses = courses.slice(
+    currentPage * PAGE_SIZE,
+    (currentPage + 1) * PAGE_SIZE,
+  );
 
   // Courses available to add (not already in transcript)
   const addableCourses = useMemo(
@@ -49,25 +50,37 @@ export function TranscriptPage() {
     [courses],
   );
 
-  function handleAdd() {
+  async function handleAdd() {
     if (!selectedCourse) return;
-    const newCourse: CompletedCourse = {
-      id: Date.now(),
-      studentId,
-      courseCode: selectedCourse,
-      grade: "—",
-      semester: "Spring 2026",
-    };
-    setCourses([...courses, newCourse]);
-    setSelectedCourse("");
+
+    try {
+      setSubmitError(null);
+      await addCourse({
+        courseCode: selectedCourse,
+        grade: "—",
+        semester: "Spring 2026",
+      });
+      setSelectedCourse("");
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setSubmitError(err.message);
+      } else {
+        setSubmitError("Unable to add course");
+      }
+    }
   }
 
-  function handleDelete(id: number) {
-    const updated = courses.filter((c) => c.id !== id);
-    setCourses(updated);
-    // If current page is now empty, go back
-    const newTotalPages = Math.ceil(updated.length / PAGE_SIZE);
-    if (page >= newTotalPages && page > 0) setPage(newTotalPages - 1);
+  async function handleDelete(id: number) {
+    try {
+      setSubmitError(null);
+      await removeCourse(id);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setSubmitError(err.message);
+      } else {
+        setSubmitError("Unable to delete course");
+      }
+    }
   }
 
   return (
@@ -82,7 +95,9 @@ export function TranscriptPage() {
         </div>
         <div className="transcript-header-right">
           <Bell size={20} color="#737373" />
-          <div className="header-avatar">JD</div>
+          <div className="header-avatar">
+            {user?.displayName?.charAt(0).toUpperCase() ?? "G"}
+          </div>
         </div>
       </div>
 
@@ -121,12 +136,16 @@ export function TranscriptPage() {
         <button
           className="add-btn"
           onClick={handleAdd}
-          disabled={!selectedCourse}
+          disabled={!selectedCourse || loading}
         >
           <Plus size={16} />
           Add Course
         </button>
       </div>
+
+      {(error || submitError) && (
+        <p className="page-subtitle">{submitError ?? error}</p>
+      )}
 
       {/* Table */}
       <div className="transcript-table-container">
@@ -162,6 +181,13 @@ export function TranscriptPage() {
                 </td>
               </tr>
             ))}
+            {!loading && pagedCourses.length === 0 && (
+              <tr>
+                <td className="col-title" colSpan={5}>
+                  No transcript courses yet.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
 
@@ -173,15 +199,15 @@ export function TranscriptPage() {
           <div className="footer-buttons">
             <button
               className="footer-btn"
-              disabled={page === 0}
-              onClick={() => setPage(page - 1)}
+              disabled={currentPage === 0}
+              onClick={() => setPage(currentPage - 1)}
             >
               Previous
             </button>
             <button
               className="footer-btn"
-              disabled={page >= totalPages - 1}
-              onClick={() => setPage(page + 1)}
+              disabled={currentPage >= totalPages - 1}
+              onClick={() => setPage(currentPage + 1)}
             >
               Next
             </button>

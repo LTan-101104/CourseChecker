@@ -7,9 +7,9 @@ import {
   Circle,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { mockTranscripts } from "../data/mockTranscripts";
+import { useCompletedCourses } from "../context/CompletedCoursesContext";
 import { mockCourses } from "../data/mockCourses";
-import type { Course, Requirement } from "../types";
+import type { Course, Requirement, Transcript } from "../types";
 import "./EligibilityCheckPage.css";
 
 const courseTitleMap = new Map(mockCourses.map((c) => [c.courseCode, c.title]));
@@ -159,11 +159,14 @@ function OrReqCard({
 // ── Main Page ─────────────────────────────────────────────
 
 export function EligibilityCheckPage() {
-  const { studentId } = useAuth();
-  const transcript = useMemo(
-    () =>
-      mockTranscripts[studentId] ?? { studentId, completedCourses: [] },
-    [studentId],
+  const { user } = useAuth();
+  const { courses } = useCompletedCourses();
+  const transcript = useMemo<Transcript>(
+    () => ({
+      studentId: user?.studentId ?? "guest",
+      completedCourses: courses,
+    }),
+    [courses, user?.studentId],
   );
   const completed = useMemo(
     () => new Set(transcript.completedCourses.map((c) => c.courseCode)),
@@ -175,8 +178,14 @@ export function EligibilityCheckPage() {
   const [hasChecked, setHasChecked] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
 
-  const avatarInitials =
-    studentId === "student-001" ? "JD" : studentId.slice(0, 2).toUpperCase();
+  const avatarInitials = user?.displayName
+    ? user.displayName
+        .split(" ")
+        .map((part) => part.charAt(0))
+        .join("")
+        .slice(0, 2)
+        .toUpperCase()
+    : "G";
 
   const suggestions = useMemo(() => {
     if (!query.trim()) return [];

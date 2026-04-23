@@ -34,7 +34,6 @@ export interface Course {
 
 export interface CompletedCourse {
   id: number;
-  studentId: string;
   courseCode: string;
   grade: string;
   semester: string;

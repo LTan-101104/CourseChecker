@@ -28,7 +28,10 @@ const recordsNav: NavItem[] = [
 
 export function Sidebar() {
   const location = useLocation();
-  const { studentId } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
+  const userName = user?.displayName ?? "Guest";
+  const userEmail = user?.email ?? "Sign in to sync your transcript";
+  const userInitial = user?.displayName?.charAt(0).toUpperCase() ?? "G";
 
   function isActivePath(itemPath: string) {
     if (itemPath === "/search" && location.pathname.startsWith("/course")) {
@@ -84,11 +87,20 @@ export function Sidebar() {
 
       {/* Footer */}
       <div className="sidebar-footer">
-        <div className="user-avatar">{studentId.charAt(0).toUpperCase()}</div>
+        <div className="user-avatar">{userInitial}</div>
         <div className="user-info">
-          <span className="user-name">John Doe</span>
-          <span className="user-email">jdoe@umass.edu</span>
+          <span className="user-name">{userName}</span>
+          <span className="user-email">{userEmail}</span>
         </div>
+        {isAuthenticated ? (
+          <button type="button" className="auth-action-btn" onClick={logout}>
+            Logout
+          </button>
+        ) : (
+          <Link to="/auth" className="auth-action-btn">
+            Login
+          </Link>
+        )}
       </div>
     </aside>
   );
