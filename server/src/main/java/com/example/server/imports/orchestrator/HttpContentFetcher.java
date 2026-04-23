@@ -22,18 +22,6 @@ public class HttpContentFetcher {
         this.importProperties = importProperties;
     }
 
-    public String fetchHtml(URI uri) {
-        HttpResponse<String> response = send(
-            HttpRequest.newBuilder(uri)
-                .GET()
-                .timeout(Duration.ofSeconds(importProperties.getRequestTimeoutSeconds()))
-                .build(),
-            HttpResponse.BodyHandlers.ofString()
-        );
-        ensureSuccess(response.statusCode(), "Failed to fetch source page");
-        return response.body();
-    }
-
     public byte[] fetchPdfBytes(URI uri) {
         HttpResponse<byte[]> response = send(
             HttpRequest.newBuilder(uri)
@@ -61,9 +49,9 @@ public class HttpContentFetcher {
             return httpClient.send(request, bodyHandler);
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
-            throw new IllegalStateException("Failed HTTP request for import pipeline", exception);
+            throw new IllegalStateException(buildNetworkErrorMessage(exception), exception);
         } catch (IOException exception) {
-            throw new IllegalStateException("Failed HTTP request for import pipeline", exception);
+            throw new IllegalStateException(buildNetworkErrorMessage(exception), exception);
         }
     }
 
@@ -71,5 +59,13 @@ public class HttpContentFetcher {
         if (statusCode < 200 || statusCode >= 300) {
             throw new IllegalArgumentException(message + " (HTTP " + statusCode + ")");
         }
+    }
+
+    private String buildNetworkErrorMessage(Exception exception) {
+        String detail = exception.getMessage();
+        if (detail == null || detail.isBlank()) {
+            return "Failed HTTP request for import pipeline";
+        }
+        return "Failed HTTP request for import pipeline: " + detail;
     }
 }

@@ -45,7 +45,7 @@ class AdminImportControllerIntegrationTest {
         mockMvc.perform(post("/api/v1/admin/imports/pdf-url")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                    { "sourcePageUrl": "https://www.cics.umass.edu/documents/s26-course-descriptions" }
+                    { "sourcePageUrl": "https://www.cics.umass.edu/media/8761/download?attachment" }
                     """))
             .andExpect(status().isForbidden());
     }
@@ -56,7 +56,7 @@ class AdminImportControllerIntegrationTest {
         ImportJobResponse response = new ImportJobResponse(
             jobId,
             "PDF_URL_PAGE",
-            "https://www.cics.umass.edu/documents/s26-course-descriptions",
+            "https://www.cics.umass.edu/media/8761/download?attachment",
             null,
             "PENDING",
             Instant.now(),
@@ -80,7 +80,7 @@ class AdminImportControllerIntegrationTest {
                 .header("X-Admin-Secret", "test-admin-secret")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                    { "sourcePageUrl": "https://www.cics.umass.edu/documents/s26-course-descriptions" }
+                    { "sourcePageUrl": "https://www.cics.umass.edu/media/8761/download?attachment" }
                     """))
             .andExpect(status().isAccepted())
             .andExpect(jsonPath("$.jobId").value(jobId.toString()))
@@ -93,8 +93,8 @@ class AdminImportControllerIntegrationTest {
         when(pdfImportOrchestrator.getJob(eq(jobId), eq(true))).thenReturn(new ImportJobResponse(
             jobId,
             "PDF_URL_PAGE",
-            "https://www.cics.umass.edu/documents/s26-course-descriptions",
-            "https://www.cics.umass.edu/documents/s26-course-descriptions.pdf",
+            "https://www.cics.umass.edu/media/8761/download?attachment",
+            "https://www.cics.umass.edu/media/8761/download?attachment",
             "SUCCEEDED",
             Instant.now(),
             Instant.now(),

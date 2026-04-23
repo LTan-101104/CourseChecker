@@ -20,7 +20,6 @@ import com.example.server.dto.imports.ImportCourseResultResponse;
 import com.example.server.dto.imports.ImportJobResponse;
 import com.example.server.imports.parser.ParsedCourseRecord;
 import com.example.server.imports.parser.PdfCourseCatalogParser;
-import com.example.server.imports.parser.PdfPageLinkExtractor;
 import com.example.server.imports.parser.PdfParseResult;
 import com.example.server.imports.parser.PdfTextExtractor;
 import com.example.server.model.ImportCourseAction;
@@ -40,7 +39,6 @@ public class PdfImportOrchestrator {
     private final ImportJobRepository importJobRepository;
     private final ImportCourseResultRepository importCourseResultRepository;
     private final HttpContentFetcher httpContentFetcher;
-    private final PdfPageLinkExtractor pdfPageLinkExtractor;
     private final PdfTextExtractor pdfTextExtractor;
     private final PdfCourseCatalogParser pdfCourseCatalogParser;
     private final CourseImportService courseImportService;
@@ -49,7 +47,6 @@ public class PdfImportOrchestrator {
         ImportJobRepository importJobRepository,
         ImportCourseResultRepository importCourseResultRepository,
         HttpContentFetcher httpContentFetcher,
-        PdfPageLinkExtractor pdfPageLinkExtractor,
         PdfTextExtractor pdfTextExtractor,
         PdfCourseCatalogParser pdfCourseCatalogParser,
         CourseImportService courseImportService
@@ -57,7 +54,6 @@ public class PdfImportOrchestrator {
         this.importJobRepository = importJobRepository;
         this.importCourseResultRepository = importCourseResultRepository;
         this.httpContentFetcher = httpContentFetcher;
-        this.pdfPageLinkExtractor = pdfPageLinkExtractor;
         this.pdfTextExtractor = pdfTextExtractor;
         this.pdfCourseCatalogParser = pdfCourseCatalogParser;
         this.courseImportService = courseImportService;
@@ -100,10 +96,8 @@ public class PdfImportOrchestrator {
 
         log.info("pdf import job={} status=RUNNING", job.getId());
         try {
-            String html = httpContentFetcher.fetchHtml(URI.create(job.getSourcePageUrl()));
-            URI pdfUri = pdfPageLinkExtractor.extractBestPdfUrl(job.getSourcePageUrl(), html);
+            URI pdfUri = URI.create(job.getSourcePageUrl());
             job.setResolvedPdfUrl(pdfUri.toString());
-
             byte[] pdfBytes = httpContentFetcher.fetchPdfBytes(pdfUri);
             job.setSourceHash(hashBytes(pdfBytes));
 
