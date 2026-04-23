@@ -10,11 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.server.dto.CourseDetailDTO;
 import com.example.server.dto.CourseSummaryDTO;
 import com.example.server.exception.CourseNotFoundException;
-import com.example.server.model.AndRequirement;
 import com.example.server.model.Course;
-import com.example.server.model.CourseRequirement;
-import com.example.server.model.OrRequirement;
-import com.example.server.model.Requirement;
 import com.example.server.repository.CourseRepository;
 
 @Service
@@ -24,9 +20,14 @@ public class CourseCatalogService {
     static final int SEARCH_RESULT_LIMIT = 10;
 
     private final CourseRepository courseRepository;
+    private final RequirementTreeMapper requirementTreeMapper;
 
-    public CourseCatalogService(CourseRepository courseRepository) {
+    public CourseCatalogService(
+        CourseRepository courseRepository,
+        RequirementTreeMapper requirementTreeMapper
+    ) {
         this.courseRepository = courseRepository;
+        this.requirementTreeMapper = requirementTreeMapper;
     }
 
     public List<CourseSummaryDTO> searchCourses(String query) {
@@ -76,55 +77,8 @@ public class CourseCatalogService {
             course.getTitle(),
             course.getCredits(),
             course.getDescription(),
-            toPrerequisiteDescription(course.getPrerequisite())
+            requirementTreeMapper.toDescription(course.getPrerequisite())
         );
-    }
-
-    private String toPrerequisiteDescription(Requirement requirement) {
-        if (requirement == null) {
-            return null;
-        }
-
-        return formatRequirement(requirement, null);
-    }
-
-    private String formatRequirement(
-        Requirement requirement,
-        Class<? extends Requirement> parentType
-    ) {
-        if (requirement instanceof CourseRequirement courseRequirement) {
-            return courseRequirement.getRequiredCourseCode();
-        }
-
-        if (requirement instanceof AndRequirement andRequirement) {
-            return formatComposite(andRequirement.getChildren(), " AND ", AndRequirement.class, parentType);
-        }
-
-        if (requirement instanceof OrRequirement orRequirement) {
-            return formatComposite(orRequirement.getChildren(), " OR ", OrRequirement.class, parentType);
-        }
-
-        throw new IllegalArgumentException(
-            "Unsupported requirement type: " + requirement.getClass().getName()
-        );
-    }
-
-    private String formatComposite(
-        List<Requirement> children,
-        String delimiter,
-        Class<? extends Requirement> currentType,
-        Class<? extends Requirement> parentType
-    ) {
-        String text = children.stream()
-            .map(child -> formatRequirement(child, currentType))
-            .filter(childText -> !childText.isBlank())
-            .collect(java.util.stream.Collectors.joining(delimiter));
-
-        if (parentType != null && !parentType.equals(currentType)) {
-            return "(" + text + ")";
-        }
-
-        return text;
     }
 
     private String normalize(String value) {

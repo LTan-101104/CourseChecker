@@ -10,14 +10,19 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.example.server.dto.CourseDetailDTO;
 import com.example.server.dto.CourseSummaryDTO;
+import com.example.server.api.ErrorResponseFactory;
+import com.example.server.security.AdminSecretFilter;
+import com.example.server.security.JwtAuthenticationFilter;
 import com.example.server.service.CourseCatalogService;
 
 @WebMvcTest(CourseCatalogController.class)
+@AutoConfigureMockMvc(addFilters = false)
 class CourseCatalogControllerTest {
 
     @Autowired
@@ -25,6 +30,15 @@ class CourseCatalogControllerTest {
 
     @MockitoBean
     private CourseCatalogService courseCatalogService;
+
+    @MockitoBean
+    private ErrorResponseFactory errorResponseFactory;
+
+    @MockitoBean
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @MockitoBean
+    private AdminSecretFilter adminSecretFilter;
 
     @Test
     void searchCoursesReturnsSummaryJson() throws Exception {

@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import com.example.server.model.AndRequirement;
@@ -33,20 +34,24 @@ import com.example.server.repository.UserRepository;
 public class DatabaseSeeder implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(DatabaseSeeder.class);
+    private static final String DEV_SEED_PASSWORD = "password123!";
 
     private final CourseDataProvider dataProvider;
     private final CourseRepository courseRepository;
     private final UserRepository userRepository;
     private final CompletedCourseRepository completedCourseRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public DatabaseSeeder(CourseDataProvider dataProvider,
                           CourseRepository courseRepository,
                           UserRepository userRepository,
-                          CompletedCourseRepository completedCourseRepository) {
+                          CompletedCourseRepository completedCourseRepository,
+                          PasswordEncoder passwordEncoder) {
         this.dataProvider = dataProvider;
         this.courseRepository = courseRepository;
         this.userRepository = userRepository;
         this.completedCourseRepository = completedCourseRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -124,7 +129,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                     def.studentId(),
                     def.displayName(),
                     def.email(),
-                    def.passwordHash()
+                    resolveSeedPasswordHash(def.passwordHash())
                 );
             } else {
                 if (isNullOrBlank(user.getDisplayName()) && !isNullOrBlank(def.displayName())) {
@@ -136,8 +141,8 @@ public class DatabaseSeeder implements CommandLineRunner {
             }
 
             // Preserve any real password hash if the seed payload leaves it null.
-            if (def.passwordHash() != null || user.getPasswordHash() == null) {
-                user.setPasswordHash(def.passwordHash());
+            if (def.passwordHash() != null || isNullOrBlank(user.getPasswordHash())) {
+                user.setPasswordHash(resolveSeedPasswordHash(def.passwordHash()));
             }
 
             userRepository.save(user);
@@ -147,6 +152,14 @@ public class DatabaseSeeder implements CommandLineRunner {
 
     private boolean isNullOrBlank(String value) {
         return value == null || value.isBlank();
+    }
+
+    private String resolveSeedPasswordHash(String configuredHash) {
+        if (!isNullOrBlank(configuredHash)) {
+            return configuredHash;
+        }
+
+        return passwordEncoder.encode(DEV_SEED_PASSWORD);
     }
 
     // ── Transcript Seeding ──────────────────────────────────
