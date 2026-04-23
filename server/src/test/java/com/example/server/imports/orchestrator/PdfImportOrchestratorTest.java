@@ -18,7 +18,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.example.server.dto.imports.ImportJobResponse;
 import com.example.server.imports.parser.ParsedCourseRecord;
 import com.example.server.imports.parser.PdfCourseCatalogParser;
-import com.example.server.imports.parser.PdfPageLinkExtractor;
 import com.example.server.imports.parser.PdfParseResult;
 import com.example.server.imports.parser.PdfTextExtractor;
 import com.example.server.model.ImportJob;
@@ -42,9 +41,6 @@ class PdfImportOrchestratorTest {
     private HttpContentFetcher httpContentFetcher;
 
     @Mock
-    private PdfPageLinkExtractor pdfPageLinkExtractor;
-
-    @Mock
     private PdfTextExtractor pdfTextExtractor;
 
     @Mock
@@ -61,7 +57,6 @@ class PdfImportOrchestratorTest {
             importJobRepository,
             importCourseResultRepository,
             httpContentFetcher,
-            pdfPageLinkExtractor,
             pdfTextExtractor,
             pdfCourseCatalogParser,
             courseImportService
@@ -73,7 +68,7 @@ class PdfImportOrchestratorTest {
         when(importJobRepository.save(any(ImportJob.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         ImportJobResponse response = orchestrator.enqueueFromPageUrl(
-            "https://www.cics.umass.edu/documents/s26-course-descriptions",
+            "https://www.cics.umass.edu/media/8761/download?attachment",
             "admin"
         );
 
@@ -86,15 +81,12 @@ class PdfImportOrchestratorTest {
         ImportJob job = new ImportJob();
         UUID jobId = UUID.randomUUID();
         job.setId(jobId);
-        job.setSourcePageUrl("https://www.cics.umass.edu/documents/s26-course-descriptions");
+        job.setSourcePageUrl("https://www.cics.umass.edu/media/8761/download?attachment");
         job.setSourceType(ImportSourceType.PDF_URL_PAGE);
         job.setStatus(ImportJobStatus.PENDING);
 
         when(importJobRepository.findById(jobId)).thenReturn(Optional.of(job));
         when(importJobRepository.save(any(ImportJob.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(httpContentFetcher.fetchHtml(any())).thenReturn("<a href=\"/catalog.pdf\">pdf</a>");
-        when(pdfPageLinkExtractor.extractBestPdfUrl(any(), any()))
-            .thenReturn(java.net.URI.create("https://www.cics.umass.edu/catalog.pdf"));
         when(httpContentFetcher.fetchPdfBytes(any())).thenReturn("PDF".getBytes());
         when(pdfTextExtractor.extractText(any())).thenReturn("TEXT");
 
@@ -124,13 +116,13 @@ class PdfImportOrchestratorTest {
         ImportJob job = new ImportJob();
         UUID jobId = UUID.randomUUID();
         job.setId(jobId);
-        job.setSourcePageUrl("https://www.cics.umass.edu/documents/s26-course-descriptions");
+        job.setSourcePageUrl("https://www.cics.umass.edu/media/8761/download?attachment");
         job.setSourceType(ImportSourceType.PDF_URL_PAGE);
         job.setStatus(ImportJobStatus.PENDING);
 
         when(importJobRepository.findById(jobId)).thenReturn(Optional.of(job));
         when(importJobRepository.save(any(ImportJob.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(httpContentFetcher.fetchHtml(any())).thenThrow(new IllegalArgumentException("boom"));
+        when(httpContentFetcher.fetchPdfBytes(any())).thenThrow(new IllegalArgumentException("boom"));
 
         orchestrator.executeJob(jobId);
 
@@ -143,7 +135,7 @@ class PdfImportOrchestratorTest {
         ImportJob job = new ImportJob();
         UUID jobId = UUID.randomUUID();
         job.setId(jobId);
-        job.setSourcePageUrl("https://www.cics.umass.edu/documents/s26-course-descriptions");
+        job.setSourcePageUrl("https://www.cics.umass.edu/media/8761/download?attachment");
         job.setSourceType(ImportSourceType.PDF_URL_PAGE);
         job.setStatus(ImportJobStatus.PENDING);
 

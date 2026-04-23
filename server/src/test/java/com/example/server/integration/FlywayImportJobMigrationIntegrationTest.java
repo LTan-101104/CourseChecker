@@ -13,8 +13,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 class FlywayImportJobMigrationIntegrationTest {
 
     @Test
-    void v4CreatesImportTablesWithCascade() {
-        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource("v4-" + UUID.randomUUID()));
+    void v6CreatesImportTablesWithCascade() {
+        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource("v6-" + UUID.randomUUID()));
         migrate(jdbcTemplate);
 
         jdbcTemplate.execute("""
@@ -43,7 +43,7 @@ class FlywayImportJobMigrationIntegrationTest {
         Flyway.configure()
             .dataSource(jdbcTemplate.getDataSource())
             .locations(
-                "filesystem:" + Path.of("src/test/java/com/example/server/integration/flyway/v4import")
+                "filesystem:" + Path.of("src/test/java/com/example/server/integration/flyway/v6import")
                     .toAbsolutePath()
             )
             .load()

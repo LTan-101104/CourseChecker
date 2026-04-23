@@ -97,6 +97,84 @@ docker compose down -v && rm -rf docker/postgres-data
 
 ---
 
+## Auth Flow (JWT, Server)
+
+The auth system was introduced in commit `8e1324e` (`feat(server): add jwt auth and scoped crud`).  
+Latest commit (`94809ca`) is test-only and does not change runtime auth behavior.
+
+### Key Files
+
+- `server/src/main/java/com/example/server/security/SecurityConfig.java`
+- `server/src/main/java/com/example/server/security/JwtAuthenticationFilter.java`
+- `server/src/main/java/com/example/server/security/JwtService.java`
+- `server/src/main/java/com/example/server/controller/AuthController.java`
+- `server/src/main/java/com/example/server/service/AuthService.java`
+- `server/src/main/java/com/example/server/security/AuthenticatedUser.java`
+- `server/src/main/java/com/example/server/security/RestAuthenticationEntryPoint.java`
+- `server/src/main/java/com/example/server/security/RestAccessDeniedHandler.java`
+- `server/src/main/java/com/example/server/security/ApplicationSecretsValidator.java`
+
+### Request Lifecycle
+
+1. `SecurityConfig` enables stateless security and permits only `POST /api/v1/auth/register` and `POST /api/v1/auth/login` publicly.
+2. `JwtAuthenticationFilter` reads `Authorization: Bearer <token>`, validates/parses via `JwtService`, and extracts `userId`.
+3. The filter loads the user, wraps it in `AuthenticatedUser`, and stores it in `SecurityContext`.
+4. `AuthService.register()` validates uniqueness, hashes password with BCrypt, saves user, and returns `AuthResponse(token, user)`.
+5. `AuthService.login()` verifies password and returns a new JWT in `AuthResponse`.
+6. Protected endpoints consume `@AuthenticationPrincipal AuthenticatedUser`; ownership checks are enforced in service layer methods (for example transcript CRUD).
+7. Unauthorized requests return JSON `401` via `RestAuthenticationEntryPoint`; forbidden requests return JSON `403` via `RestAccessDeniedHandler`.
+8. Outside `dev/test`, `ApplicationSecretsValidator` requires both `app.jwt.secret` and `app.admin.secret`.
+
+---
+
+## PDF Import / Parser Flow (Server)
+
+### Key Files
+
+- `server/src/main/java/com/example/server/controller/AdminImportController.java`
+- `server/src/main/java/com/example/server/imports/orchestrator/AdminSecretValidator.java`
+- `server/src/main/java/com/example/server/imports/orchestrator/AsyncPdfImportRunner.java`
+- `server/src/main/java/com/example/server/imports/orchestrator/PdfImportOrchestrator.java`
+- `server/src/main/java/com/example/server/imports/orchestrator/HttpContentFetcher.java`
+- `server/src/main/java/com/example/server/imports/parser/PdfTextExtractor.java`
+- `server/src/main/java/com/example/server/imports/parser/PdfCourseCatalogParser.java`
+- `server/src/main/java/com/example/server/imports/parser/RequirementExpressionParser.java`
+- `server/src/main/java/com/example/server/service/CourseImportService.java`
+- `server/src/main/java/com/example/server/model/ImportJob.java`
+- `server/src/main/java/com/example/server/model/ImportCourseResult.java`
+
+### End-to-End Pipeline
+
+1. `POST /api/v1/admin/imports/pdf-url` receives `sourcePageUrl` and `X-Admin-Secret`.
+2. `AdminSecretValidator` verifies admin secret and `PdfImportOrchestrator.enqueueFromPageUrl()` creates a `PENDING` `ImportJob`.
+3. `AsyncPdfImportRunner` executes the job asynchronously via `@Async("importTaskExecutor")`.
+4. The submitted URL is treated as a direct PDF download URL (for example `https://www.cics.umass.edu/media/8761/download?attachment`).
+5. Orchestrator moves job to `RUNNING`, downloads PDF bytes, enforces fetch constraints, and computes a SHA-256 source hash.
+6. `PdfTextExtractor` (PDFBox) extracts raw text from bytes.
+7. `PdfCourseCatalogParser` parses course blocks; prerequisite text is converted into recursive `RequirementDefinition` trees via `RequirementExpressionParser`.
+8. Each parsed course is imported through `CourseImportService.importCourse()` (new transaction) to upsert course + prerequisite tree.
+9. Per-course outcomes are stored as `ImportCourseResult` rows (`INSERTED`, `UPDATED`, `FAILED`) with warnings/errors.
+10. Job status is finalized as `SUCCEEDED`, `PARTIAL_SUCCESS`, or `FAILED`, and results are available at:
+    - `GET /api/v1/admin/imports/{jobId}`
+    - `GET /api/v1/admin/imports/{jobId}/results`
+
+### Current Assumptions
+
+- Admin requests use a direct PDF download URL, not an HTML landing page.
+- The current UMass CICS PDF layout is parsed as:
+  - description text first
+  - optional prerequisite sentence inside the description block
+  - instructor line
+  - course header line last (for example `CICS 109  Intro to Data Analysis in R`)
+- `PdfCourseCatalogParser` treats the header line as the end of the record and builds the course from the preceding text block.
+
+### Operational Notes
+
+- If import jobs fail with a generic network error, restart the server with a clean rebuild so the latest `HttpContentFetcher` error messages are present.
+- Avoid leaving duplicate files with names like `* 2.java` or `* 2.sql` in source or test trees; they can break compilation or produce Flyway duplicate-version failures.
+
+---
+
 ## Seed Data System
 
 The seeder is **modular and decoupled**:
