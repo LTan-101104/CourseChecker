@@ -9,16 +9,11 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-import com.example.server.model.AndRequirement;
 import com.example.server.model.CompletedCourse;
-import com.example.server.model.Course;
-import com.example.server.model.CourseRequirement;
-import com.example.server.model.OrRequirement;
-import com.example.server.model.Requirement;
 import com.example.server.model.User;
 import com.example.server.repository.CompletedCourseRepository;
-import com.example.server.repository.CourseRepository;
 import com.example.server.repository.UserRepository;
+import com.example.server.service.CourseImportService;
 
 /**
  * Seeds the database on application startup using data from a {@link CourseDataProvider}.
@@ -37,18 +32,18 @@ public class DatabaseSeeder implements CommandLineRunner {
     private static final String DEV_SEED_PASSWORD = "password123!";
 
     private final CourseDataProvider dataProvider;
-    private final CourseRepository courseRepository;
+    private final CourseImportService courseImportService;
     private final UserRepository userRepository;
     private final CompletedCourseRepository completedCourseRepository;
     private final PasswordEncoder passwordEncoder;
 
     public DatabaseSeeder(CourseDataProvider dataProvider,
-                          CourseRepository courseRepository,
+                          CourseImportService courseImportService,
                           UserRepository userRepository,
                           CompletedCourseRepository completedCourseRepository,
                           PasswordEncoder passwordEncoder) {
         this.dataProvider = dataProvider;
-        this.courseRepository = courseRepository;
+        this.courseImportService = courseImportService;
         this.userRepository = userRepository;
         this.completedCourseRepository = completedCourseRepository;
         this.passwordEncoder = passwordEncoder;
@@ -65,54 +60,9 @@ public class DatabaseSeeder implements CommandLineRunner {
 
     private void seedCourses() {
         List<CourseDefinition> definitions = dataProvider.getCourseDefinitions();
-
-        for (CourseDefinition def : definitions) {
-            if (courseRepository.existsByCourseCode(def.getCourseCode())) {
-                log.info("⏭  Course {} already exists, skipping.", def.getCourseCode());
-                continue;
-            }
-
-            Course course = new Course(
-                def.getCourseCode(),
-                def.getTitle(),
-                def.getCredits(),
-                def.getDescription()
-            );
-
-            if (def.getPrerequisite() != null) {
-                Requirement prereqTree = buildRequirementTree(def.getPrerequisite());
-                course.setPrerequisite(prereqTree);
-            }
-
-            courseRepository.save(course);
-            log.info("✅ Seeded course: {}", def.getCourseCode());
+        for (CourseImportService.CourseImportResult result : courseImportService.importCourses(definitions)) {
+            log.info("✅ {} course: {}", result.action(), result.courseCode());
         }
-    }
-
-    /**
-     * Recursively converts a {@link RequirementDefinition} tree (DTO)
-     * into the corresponding JPA entity tree.
-     */
-    private Requirement buildRequirementTree(RequirementDefinition def) {
-        return switch (def.getType()) {
-            case COURSE -> new CourseRequirement(def.getCourseCode());
-
-            case AND -> {
-                AndRequirement and = new AndRequirement();
-                for (RequirementDefinition child : def.getChildren()) {
-                    and.addChild(buildRequirementTree(child));
-                }
-                yield and;
-            }
-
-            case OR -> {
-                OrRequirement or = new OrRequirement();
-                for (RequirementDefinition child : def.getChildren()) {
-                    or.addChild(buildRequirementTree(child));
-                }
-                yield or;
-            }
-        };
     }
 
     // ── User Seeding ────────────────────────────────────────
