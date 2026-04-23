@@ -5,13 +5,14 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import java.util.ArrayList;
+import java.util.List;
+import jakarta.persistence.CascadeType;
 
 /**
  * Represents an application user identified by a student ID.
- *
- * <p>The password hash is reserved for future authentication work and may be null
- * until login/logout flows are implemented.
  */
 @Entity
 @Table(name = "app_user")
@@ -30,8 +31,11 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(name = "password_hash")
+    @Column(name = "password_hash", nullable = false)
     private String passwordHash;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CompletedCourse> completedCourses = new ArrayList<>();
 
     public User() {}
 
@@ -56,4 +60,19 @@ public class User {
 
     public String getPasswordHash() { return passwordHash; }
     public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
+
+    public List<CompletedCourse> getCompletedCourses() { return completedCourses; }
+    public void setCompletedCourses(List<CompletedCourse> completedCourses) {
+        this.completedCourses = completedCourses;
+    }
+
+    public void addCompletedCourse(CompletedCourse completedCourse) {
+        completedCourses.add(completedCourse);
+        completedCourse.setUser(this);
+    }
+
+    public void removeCompletedCourse(CompletedCourse completedCourse) {
+        completedCourses.remove(completedCourse);
+        completedCourse.setUser(null);
+    }
 }

@@ -9,13 +9,20 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 /**
  * Represents a course completed by a student.
  * Used to check prerequisite eligibility against a student's transcript.
  */
 @Entity
-@Table(name = "completed_course")
+@Table(
+    name = "completed_course",
+    uniqueConstraints = @UniqueConstraint(
+        name = "uk_completed_course_user_course_code",
+        columnNames = {"user_id", "course_code"}
+    )
+)
 public class CompletedCourse {
 
     @Id

@@ -9,3 +9,18 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create-drop
+
+app:
+  jwt:
+    secret: test-jwt-secret-test-jwt-secret-test-jwt-secret-test-jwt-secret
+    expiration-minutes: 30
+  admin:
+    secret: test-admin-secret
+  imports:
+    max-pdf-size-bytes: 15728640
+    request-timeout-seconds: 5
+    async:
+      core-pool-size: 1
+      max-pool-size: 2
+      queue-capacity: 10
+      thread-name-prefix: test-import-worker-

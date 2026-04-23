@@ -33,8 +33,15 @@ class CourseCatalogServiceTest {
     @Mock
     private CourseRepository courseRepository;
 
-    @InjectMocks
     private CourseCatalogService courseCatalogService;
+
+    @InjectMocks
+    private RequirementTreeMapper requirementTreeMapper;
+
+    @org.junit.jupiter.api.BeforeEach
+    void setUp() {
+        courseCatalogService = new CourseCatalogService(courseRepository, requirementTreeMapper);
+    }
 
     @Test
     void searchCoursesReturnsMappedSummariesAndUsesConfiguredLimit() {

@@ -23,4 +23,6 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     );
 
     boolean existsByCourseCode(String courseCode);
+
+    boolean existsByCourseCodeIgnoreCase(String courseCode);
 }
