@@ -18,8 +18,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.example.server.model.User;
 import com.example.server.repository.CompletedCourseRepository;
-import com.example.server.repository.CourseRepository;
 import com.example.server.repository.UserRepository;
+import com.example.server.service.CourseImportService;
 
 @ExtendWith(MockitoExtension.class)
 class DatabaseSeederTest {
@@ -28,7 +28,7 @@ class DatabaseSeederTest {
     private CourseDataProvider courseDataProvider;
 
     @Mock
-    private CourseRepository courseRepository;
+    private CourseImportService courseImportService;
 
     @Mock
     private UserRepository userRepository;
@@ -47,7 +47,12 @@ class DatabaseSeederTest {
         when(courseDataProvider.getCourseDefinitions()).thenReturn(List.of(
             new CourseDefinition("COMPSCI 121", "Intro", 4, "desc", null)
         ));
-        when(courseRepository.existsByCourseCode("COMPSCI 121")).thenReturn(false);
+        when(courseImportService.importCourses(any())).thenReturn(List.of(
+            new CourseImportService.CourseImportResult(
+                "COMPSCI 121",
+                CourseImportService.ImportAction.INSERTED
+            )
+        ));
         when(courseDataProvider.getUserDefinitions()).thenReturn(List.of(
             new CourseDataProvider.UserDefinition("student-123", "Ada", "ada@umass.edu", null)
         ));
@@ -71,7 +76,7 @@ class DatabaseSeederTest {
 
         databaseSeeder.run();
 
-        verify(courseRepository).save(any());
+        verify(courseImportService).importCourses(any());
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(userCaptor.capture());
         verify(completedCourseRepository).save(any());
@@ -82,6 +87,7 @@ class DatabaseSeederTest {
     @Test
     void runFailsWhenTranscriptReferencesMissingUser() {
         when(courseDataProvider.getCourseDefinitions()).thenReturn(List.of());
+        when(courseImportService.importCourses(any())).thenReturn(List.of());
         when(courseDataProvider.getUserDefinitions()).thenReturn(List.of());
         when(courseDataProvider.getCompletedCourseDefinitions()).thenReturn(List.of(
             new CourseDataProvider.CompletedCourseDefinition("missing-student", "COMPSCI 121", "A", "Fall 2024")
@@ -99,6 +105,7 @@ class DatabaseSeederTest {
         existingUser.setId(1L);
 
         when(courseDataProvider.getCourseDefinitions()).thenReturn(List.of());
+        when(courseImportService.importCourses(any())).thenReturn(List.of());
         when(courseDataProvider.getUserDefinitions()).thenReturn(List.of(
             new CourseDataProvider.UserDefinition("student-123", "Ada", "ada@umass.edu", null)
         ));
