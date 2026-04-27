@@ -5,17 +5,9 @@ import { type CourseSummaryDTO } from "../api/courses";
 import { ApiError } from "../api/client";
 import { useCompletedCourses } from "../context/CompletedCoursesContext";
 import { useCourseSearch } from "../hooks/useCourseSearch";
-import { mockCourses } from "../data/mockCourses";
 import "./TranscriptPage.css";
 
 const PAGE_SIZE = 9;
-
-const mockCourseTitleMap = new Map(
-  mockCourses.map((c) => [c.courseCode, c.title]),
-);
-const mockCourseCreditsMap = new Map(
-  mockCourses.map((c) => [c.courseCode, c.credits]),
-);
 
 export function TranscriptPage() {
   const { user } = useAuth();
@@ -42,34 +34,9 @@ export function TranscriptPage() {
     [addSearchResults, courses],
   );
 
-  const selectedTitlesMap = useMemo(
-    () =>
-      new Map(
-        addSearchResults.map((course) => [course.courseCode, course.title]),
-      ),
-    [addSearchResults],
-  );
-  const selectedCreditsMap = useMemo(
-    () =>
-      new Map(
-        addSearchResults.map((course) => [
-          course.courseCode,
-          course.credits ?? undefined,
-        ]),
-      ),
-    [addSearchResults],
-  );
-
   // Stats
   const totalCourses = courses.length;
-  const totalCredits = courses.reduce(
-    (sum, c) =>
-      sum +
-      (selectedCreditsMap.get(c.courseCode) ??
-        mockCourseCreditsMap.get(c.courseCode) ??
-        0),
-    0,
-  );
+  const totalCredits = courses.reduce((sum, c) => sum + (c.credits ?? 0), 0);
   const csCourses = courses.filter((c) =>
     c.courseCode.startsWith("COMPSCI"),
   ).length;
@@ -223,16 +190,8 @@ export function TranscriptPage() {
               {pagedCourses.map((c) => (
                 <tr key={c.id}>
                   <td className="col-code cell-code">{c.courseCode}</td>
-                  <td className="col-title">
-                    {selectedTitlesMap.get(c.courseCode) ??
-                      mockCourseTitleMap.get(c.courseCode) ??
-                      c.courseCode}
-                  </td>
-                  <td className="col-credits">
-                    {selectedCreditsMap.get(c.courseCode) ??
-                      mockCourseCreditsMap.get(c.courseCode) ??
-                      "—"}
-                  </td>
+                  <td className="col-title">{c.title ?? c.courseCode}</td>
+                  <td className="col-credits">{c.credits ?? "—"}</td>
                   <td className="col-semester cell-semester">{c.semester}</td>
                   <td className="col-action">
                     <button

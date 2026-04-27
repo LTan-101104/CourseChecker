@@ -5,6 +5,8 @@ export interface CompletedCourseDTO {
   courseCode: string;
   grade: string | null;
   semester: string | null;
+  title: string | null;
+  credits: number | null;
 }
 
 export interface UpsertCompletedCoursePayload {
