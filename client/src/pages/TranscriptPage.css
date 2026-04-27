@@ -289,6 +289,12 @@
   background: #fef2f2;
 }
 
+.transcript-table-scroll {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
 /* ── Table Footer ────────────────────────── */
 
 .table-footer {
