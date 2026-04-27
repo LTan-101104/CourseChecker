@@ -77,6 +77,7 @@ public class CourseCatalogService {
             course.getTitle(),
             course.getCredits(),
             course.getDescription(),
+            requirementTreeMapper.toResponse(course.getPrerequisite()),
             requirementTreeMapper.toDescription(course.getPrerequisite())
         );
     }

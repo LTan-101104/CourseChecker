@@ -5,5 +5,6 @@ public record CourseDetailDTO(
     String title,
     Integer credits,
     String description,
+    RequirementNodeResponse prerequisite,
     String prerequisiteDescription
 ) {}

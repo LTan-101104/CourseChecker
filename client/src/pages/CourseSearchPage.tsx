@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { Bell } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { mockCourses } from "../data/mockCourses";
+import { useCourseSearch } from "../hooks/useCourseSearch";
 import { CourseCard } from "../components/CourseCard";
 import "./CourseSearchPage.css";
 
@@ -9,34 +9,22 @@ type Filter = "All" | "COMPSCI" | "MATH";
 
 export function CourseSearchPage() {
   const { user } = useAuth();
-  // const [query, setQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<Filter>("All");
   const [searchTerm, setSearchTerm] = useState("");
+  const { results, loading, error } = useCourseSearch(searchTerm);
 
   const filters: Filter[] = ["All", "COMPSCI", "MATH"];
 
   const filteredCourses = useMemo(() => {
-    let results = mockCourses;
+    let currentResults = results;
 
     if (activeFilter !== "All") {
-      results = results.filter((c) => c.courseCode.startsWith(activeFilter));
-    }
-
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      results = results.filter(
-        (c) =>
-          c.courseCode.toLowerCase().includes(term) ||
-          c.title.toLowerCase().includes(term),
+      currentResults = currentResults.filter((c) =>
+        c.courseCode.startsWith(activeFilter),
       );
     }
-
-    return results;
-  }, [activeFilter, searchTerm]);
-
-  function handleOnChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setSearchTerm(e.target.value);
-  }
+    return currentResults;
+  }, [activeFilter, results]);
 
   return (
     <div className="search-page">
@@ -64,7 +52,7 @@ export function CourseSearchPage() {
             type="text"
             placeholder="Search by course code or title..."
             value={searchTerm}
-            onChange={(e) => handleOnChange(e)}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
       </div>
@@ -88,8 +76,20 @@ export function CourseSearchPage() {
 
       {/* Results Grid */}
       <div className="results-grid">
+        {!searchTerm.trim() && (
+          <p className="result-empty">Type to search courses in the database.</p>
+        )}
+        {searchTerm.trim() && loading && (
+          <p className="result-empty">Searching courses...</p>
+        )}
+        {searchTerm.trim() && !loading && error && (
+          <p className="result-empty">{error}</p>
+        )}
+        {searchTerm.trim() && !loading && !error && filteredCourses.length === 0 && (
+          <p className="result-empty">No courses found.</p>
+        )}
         {filteredCourses.map((course) => (
-          <CourseCard key={course.id} course={course} />
+          <CourseCard key={course.courseCode} course={course} />
         ))}
       </div>
     </div>

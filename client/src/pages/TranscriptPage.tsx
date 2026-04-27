@@ -1,37 +1,68 @@
 import { useMemo, useState } from "react";
-import { Bell, Plus, Trash2, ChevronsUpDown } from "lucide-react";
+import { Bell, Plus, Trash2, Search } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { type CourseSummaryDTO } from "../api/courses";
 import { ApiError } from "../api/client";
 import { useCompletedCourses } from "../context/CompletedCoursesContext";
+import { useCourseSearch } from "../hooks/useCourseSearch";
 import { mockCourses } from "../data/mockCourses";
 import "./TranscriptPage.css";
 
 const PAGE_SIZE = 9;
 
-const courseTitleMap = new Map(mockCourses.map((c) => [c.courseCode, c.title]));
-const courseCreditsMap = new Map(
+const mockCourseTitleMap = new Map(mockCourses.map((c) => [c.courseCode, c.title]));
+const mockCourseCreditsMap = new Map(
   mockCourses.map((c) => [c.courseCode, c.credits]),
 );
 
 export function TranscriptPage() {
   const { user } = useAuth();
   const { courses, loading, error, addCourse, removeCourse } = useCompletedCourses();
-  const [page, setPage] = useState(0); // page state for page navigation
-  const [selectedCourse, setSelectedCourse] = useState("");
+  const [page, setPage] = useState(0);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [showAddDropdown, setShowAddDropdown] = useState(false);
+  const [addQuery, setAddQuery] = useState("");
+  const [selectedAddCourse, setSelectedAddCourse] =
+    useState<CourseSummaryDTO | null>(null);
+  const { results: addSearchResults, loading: isSearchingAddCourses, error: addSearchError } =
+    useCourseSearch(addQuery);
+
+  const addableCourses = useMemo(
+    () =>
+      addSearchResults.filter(
+        (candidate) =>
+          !courses.some((course) => course.courseCode === candidate.courseCode),
+      ),
+    [addSearchResults, courses],
+  );
+
+  const selectedTitlesMap = useMemo(
+    () =>
+      new Map(
+        addSearchResults.map((course) => [course.courseCode, course.title]),
+      ),
+    [addSearchResults],
+  );
+  const selectedCreditsMap = useMemo(
+    () =>
+      new Map(
+        addSearchResults.map((course) => [course.courseCode, course.credits ?? undefined]),
+      ),
+    [addSearchResults],
+  );
 
   // Stats
   const totalCourses = courses.length;
   const totalCredits = courses.reduce(
-    (sum, c) => sum + (courseCreditsMap.get(c.courseCode) ?? 0),
+    (sum, c) =>
+      sum +
+      (selectedCreditsMap.get(c.courseCode) ??
+        mockCourseCreditsMap.get(c.courseCode) ??
+        0),
     0,
   );
-  const csCourses = courses.filter((c) =>
-    c.courseCode.startsWith("COMPSCI"),
-  ).length;
-  const mathCourses = courses.filter((c) =>
-    c.courseCode.startsWith("MATH"),
-  ).length;
+  const csCourses = courses.filter((c) => c.courseCode.startsWith("COMPSCI")).length;
+  const mathCourses = courses.filter((c) => c.courseCode.startsWith("MATH")).length;
 
   // Pagination
   const totalPages = Math.ceil(courses.length / PAGE_SIZE);
@@ -41,26 +72,19 @@ export function TranscriptPage() {
     (currentPage + 1) * PAGE_SIZE,
   );
 
-  // Courses available to add (not already in transcript)
-  const addableCourses = useMemo(
-    () =>
-      mockCourses.filter(
-        (c) => !courses.some((cc) => cc.courseCode === c.courseCode),
-      ),
-    [courses],
-  );
-
   async function handleAdd() {
-    if (!selectedCourse) return;
+    if (!selectedAddCourse) return;
 
     try {
       setSubmitError(null);
       await addCourse({
-        courseCode: selectedCourse,
+        courseCode: selectedAddCourse.courseCode,
         grade: "—",
         semester: "Spring 2026",
       });
-      setSelectedCourse("");
+      setSelectedAddCourse(null);
+      setAddQuery("");
+      setShowAddDropdown(false);
     } catch (err) {
       if (err instanceof ApiError) {
         setSubmitError(err.message);
@@ -103,48 +127,64 @@ export function TranscriptPage() {
 
       {/* Stat Cards */}
       <div className="stats-row">
-        <StatCard
-          title="Total Courses"
-          value={totalCourses}
-          badge="CS & Math"
-        />
+        <StatCard title="Total Courses" value={totalCourses} badge="CS & Math" />
         <StatCard title="Total Credits" value={totalCredits} badge="of 120" />
         <StatCard title="CS Courses" value={csCourses} badge="completed" />
         <StatCard title="Math Courses" value={mathCourses} badge="completed" />
       </div>
 
       {/* Add Course Row */}
-      {/* TODO: need to find a way to link this to course search somehow */}
       <div className="add-course-row">
         <div className="add-course-select-wrapper">
-          <select
+          <input
             className="add-course-select"
-            value={selectedCourse}
-            onChange={(e) => setSelectedCourse(e.target.value)}
-          >
-            <option value="">
-              Search and add a course to your transcript...
-            </option>
-            {addableCourses.map((c) => (
-              <option key={c.courseCode} value={c.courseCode}>
-                {c.courseCode} — {c.title}
-              </option>
-            ))}
-          </select>
-          <ChevronsUpDown size={16} className="select-icon" />
+            type="text"
+            value={addQuery}
+            placeholder="Search and add a course to your transcript..."
+            onChange={(e) => {
+              setAddQuery(e.target.value);
+              setSelectedAddCourse(null);
+              setSubmitError(null);
+              setShowAddDropdown(true);
+            }}
+            onFocus={() => setShowAddDropdown(true)}
+            onBlur={() => setTimeout(() => setShowAddDropdown(false), 150)}
+          />
+          <Search size={16} className="select-icon" />
+          {showAddDropdown && addableCourses.length > 0 && (
+            <ul className="add-course-dropdown">
+              {addableCourses.map((course) => (
+                <li
+                  key={course.courseCode}
+                  className="add-course-dropdown-item"
+                  onMouseDown={() => {
+                    setSelectedAddCourse(course);
+                    setAddQuery(`${course.courseCode} — ${course.title}`);
+                    setShowAddDropdown(false);
+                  }}
+                >
+                  <span className="dropdown-code">{course.courseCode}</span>
+                  <span className="dropdown-title">{course.title}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
         <button
           className="add-btn"
           onClick={handleAdd}
-          disabled={!selectedCourse || loading}
+          disabled={!selectedAddCourse || loading}
         >
           <Plus size={16} />
           Add Course
         </button>
       </div>
 
-      {(error || submitError) && (
-        <p className="page-subtitle">{submitError ?? error}</p>
+      {(error || submitError || addSearchError) && (
+        <p className="page-subtitle">{submitError ?? addSearchError ?? error}</p>
+      )}
+      {addQuery.trim() && isSearchingAddCourses && (
+        <p className="page-subtitle">Searching courses...</p>
       )}
 
       {/* Table */}
@@ -164,16 +204,22 @@ export function TranscriptPage() {
               <tr key={c.id}>
                 <td className="col-code cell-code">{c.courseCode}</td>
                 <td className="col-title">
-                  {courseTitleMap.get(c.courseCode) ?? c.courseCode}
+                  {selectedTitlesMap.get(c.courseCode) ??
+                    mockCourseTitleMap.get(c.courseCode) ??
+                    c.courseCode}
                 </td>
                 <td className="col-credits">
-                  {courseCreditsMap.get(c.courseCode) ?? "—"}
+                  {selectedCreditsMap.get(c.courseCode) ??
+                    mockCourseCreditsMap.get(c.courseCode) ??
+                    "—"}
                 </td>
                 <td className="col-semester cell-semester">{c.semester}</td>
                 <td className="col-action">
                   <button
                     className="delete-btn"
-                    onClick={() => handleDelete(c.id)}
+                    onClick={() => {
+                      void handleDelete(c.id);
+                    }}
                     aria-label={`Remove ${c.courseCode}`}
                   >
                     <Trash2 size={16} />

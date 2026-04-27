@@ -15,6 +15,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.example.server.dto.CourseDetailDTO;
+import com.example.server.dto.RequirementNodeResponse;
+import com.example.server.dto.RequirementNodeType;
 import com.example.server.dto.CourseSummaryDTO;
 import com.example.server.api.ErrorResponseFactory;
 import com.example.server.security.AdminSecretFilter;
@@ -61,6 +63,11 @@ class CourseCatalogControllerTest {
                 "Programming Methodology",
                 4,
                 "Object-oriented design and software engineering.",
+                new RequirementNodeResponse(
+                    RequirementNodeType.COURSE,
+                    "COMPSCI 187",
+                    List.of()
+                ),
                 "COMPSCI 187 AND (MATH 131 OR MATH 132)"
             )
         );
@@ -72,6 +79,9 @@ class CourseCatalogControllerTest {
             .andExpect(jsonPath("$.credits").value(4))
             .andExpect(jsonPath("$.description")
                 .value("Object-oriented design and software engineering."))
+            .andExpect(jsonPath("$.prerequisite.type").value("COURSE"))
+            .andExpect(jsonPath("$.prerequisite.courseCode").value("COMPSCI 187"))
+            .andExpect(jsonPath("$.prerequisite.children").isEmpty())
             .andExpect(jsonPath("$.prerequisiteDescription")
                 .value("COMPSCI 187 AND (MATH 131 OR MATH 132)"));
     }

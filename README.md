@@ -102,7 +102,66 @@ On first startup, Spring Boot will:
 
 The API is available at `http://localhost:8080`.
 
-### 3. Start the Frontend
+### 3. Populate Course Data from UMass PDF Imports
+
+The admin import endpoint is asynchronous and protected by `X-Admin-Secret`.
+For local development, the default secret is:
+
+- `coursechecker-local-admin-secret`
+
+Set local variables:
+
+```bash
+API_BASE="http://localhost:8080"
+ADMIN_SECRET="coursechecker-local-admin-secret"
+```
+
+Submit import jobs (3 PDFs):
+
+```bash
+curl -sS -X POST "$API_BASE/api/v1/admin/imports/pdf-url" \
+  -H "Content-Type: application/json" \
+  -H "X-Admin-Secret: $ADMIN_SECRET" \
+  -d '{"sourcePageUrl":"https://www.cics.umass.edu/media/7501/download?attachment"}'
+
+curl -sS -X POST "$API_BASE/api/v1/admin/imports/pdf-url" \
+  -H "Content-Type: application/json" \
+  -H "X-Admin-Secret: $ADMIN_SECRET" \
+  -d '{"sourcePageUrl":"https://www.cics.umass.edu/media/8761/download?attachment"}'
+
+curl -sS -X POST "$API_BASE/api/v1/admin/imports/pdf-url" \
+  -H "Content-Type: application/json" \
+  -H "X-Admin-Secret: $ADMIN_SECRET" \
+  -d '{"sourcePageUrl":"https://www.cics.umass.edu/media/9986/download?attachment"}'
+```
+
+Each response includes a `jobId`. Poll each job until terminal status:
+
+```bash
+JOB_ID="<paste-job-id>"
+curl -sS -H "X-Admin-Secret: $ADMIN_SECRET" \
+  "$API_BASE/api/v1/admin/imports/$JOB_ID"
+```
+
+Terminal status values:
+- `SUCCEEDED`: import completed successfully
+- `PARTIAL_SUCCESS`: usable data imported, inspect warnings/errors
+- `FAILED`: import failed, inspect `errorMessage` and job results
+
+Inspect per-course results:
+
+```bash
+curl -sS -H "X-Admin-Secret: $ADMIN_SECRET" \
+  "$API_BASE/api/v1/admin/imports/$JOB_ID/results"
+```
+
+Quick verification that data is searchable:
+
+```bash
+curl -sS "$API_BASE/api/v1/courses/search?q=COMPSCI"
+```
+
+### 4. Start the Frontend
 
 ```bash
 cd client
@@ -111,6 +170,15 @@ yarn dev
 ```
 
 The UI is available at `http://localhost:5173`.
+
+### Flyway Local Troubleshooting
+
+If backend startup fails with migration checksum mismatch (for example, a stale local `flyway_schema_history`), reset local DB state and re-run setup:
+
+```bash
+docker compose down -v && rm -rf docker/postgres-data
+docker compose up -d
+```
 
 ## Project Structure
 
