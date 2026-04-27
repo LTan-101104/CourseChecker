@@ -58,6 +58,9 @@ public class CourseImportService {
         course.setTitle(definition.getTitle().trim());
         course.setCredits(definition.getCredits());
         course.setDescription(normalizeOptional(definition.getDescription()));
+        if (definition.getCourseType() != null) {
+            course.setCourseType(definition.getCourseType());
+        }
         if (!(preserveExistingPrerequisite && course != null && definition.getPrerequisite() == null)) {
             course.setPrerequisite(buildRequirementTree(definition.getPrerequisite()));
         }

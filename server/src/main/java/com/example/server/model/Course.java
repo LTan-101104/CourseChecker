@@ -3,6 +3,8 @@ package com.example.server.model;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -32,6 +34,10 @@ public class Course {
 
     @Column(columnDefinition = "TEXT")
     private String description;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "course_type", nullable = false)
+    private CourseType courseType = CourseType.OTHER;
 
     /**
      * The root of the prerequisite tree (AND/OR/COURSE node).
@@ -69,4 +75,7 @@ public class Course {
 
     public Requirement getPrerequisite() { return prerequisite; }
     public void setPrerequisite(Requirement prerequisite) { this.prerequisite = prerequisite; }
+
+    public CourseType getCourseType() { return courseType; }
+    public void setCourseType(CourseType courseType) { this.courseType = courseType; }
 }
