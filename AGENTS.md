@@ -152,9 +152,15 @@ Latest commit (`94809ca`) is test-only and does not change runtime auth behavior
 5. Orchestrator moves job to `RUNNING`, downloads PDF bytes, enforces fetch constraints, and computes a SHA-256 source hash.
 6. `PdfTextExtractor` (PDFBox) extracts raw text from bytes.
 7. `PdfCourseCatalogParser` parses course blocks; prerequisite text is converted into recursive `RequirementDefinition` trees via `RequirementExpressionParser`.
-8. Each parsed course is imported through `CourseImportService.importCourse()` (new transaction) to upsert course + prerequisite tree.
-9. Per-course outcomes are stored as `ImportCourseResult` rows (`INSERTED`, `UPDATED`, `FAILED`) with warnings/errors.
-10. Job status is finalized as `SUCCEEDED`, `PARTIAL_SUCCESS`, or `FAILED`, and results are available at:
+8. `RequirementExpressionParser` normalizes UMass catalog phrasing and distinguishes `NOT_PRESENT`, `PARSED`, `UNSUPPORTED`, and `MALFORMED` prerequisite outcomes.
+9. Each parsed course is imported through `CourseImportService.importCourse()` (new transaction) to upsert course + prerequisite tree.
+10. If prerequisite parsing fails, inserts still proceed, updates preserve the existing prerequisite tree, and the import stores structured warning details rather than silently clearing prerequisites.
+11. Per-course outcomes are stored as `ImportCourseResult` rows (`INSERTED`, `UPDATED`, `FAILED`) with warnings/errors, including raw and normalized prerequisite text.
+12. `ImportJob` also records:
+    - `prerequisiteTextExtractedCount`
+    - `prerequisiteParsedCount`
+    - `prerequisiteParseFailedCount`
+13. Job status is finalized as `SUCCEEDED`, `PARTIAL_SUCCESS`, or `FAILED`, and results are available at:
     - `GET /api/v1/admin/imports/{jobId}`
     - `GET /api/v1/admin/imports/{jobId}/results`
 
@@ -171,6 +177,8 @@ Latest commit (`94809ca`) is test-only and does not change runtime auth behavior
 ### Operational Notes
 
 - If import jobs fail with a generic network error, restart the server with a clean rebuild so the latest `HttpContentFetcher` error messages are present.
+- Local development uses `coursechecker-local-admin-secret` unless `APP_ADMIN_SECRET` overrides it.
+- Frontend startup should prefer `corepack yarn dev` over assuming a globally installed `yarn` binary.
 - Avoid leaving duplicate files with names like `* 2.java` or `* 2.sql` in source or test trees; they can break compilation or produce Flyway duplicate-version failures.
 
 ---
@@ -214,7 +222,7 @@ docker compose up -d
 cd server && ./mvnw spring-boot:run
 
 # 3. Start the Vite frontend
-cd client && yarn dev
+cd client && corepack yarn dev
 ```
 
 ---

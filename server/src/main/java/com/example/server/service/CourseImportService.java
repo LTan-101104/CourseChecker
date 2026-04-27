@@ -41,6 +41,11 @@ public class CourseImportService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public CourseImportResult importCourse(CourseDefinition definition) {
+        return importCourse(definition, false);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public CourseImportResult importCourse(CourseDefinition definition, boolean preserveExistingPrerequisite) {
         String normalizedCode = normalizeCourseCode(definition.getCourseCode());
         Course course = courseRepository.findByCourseCodeIgnoreCase(normalizedCode).orElse(null);
         ImportAction action = course == null ? ImportAction.INSERTED : ImportAction.UPDATED;
@@ -53,7 +58,9 @@ public class CourseImportService {
         course.setTitle(definition.getTitle().trim());
         course.setCredits(definition.getCredits());
         course.setDescription(normalizeOptional(definition.getDescription()));
-        course.setPrerequisite(buildRequirementTree(definition.getPrerequisite()));
+        if (!(preserveExistingPrerequisite && course != null && definition.getPrerequisite() == null)) {
+            course.setPrerequisite(buildRequirementTree(definition.getPrerequisite()));
+        }
 
         courseRepository.save(course);
         return new CourseImportResult(normalizedCode, action);

@@ -77,4 +77,27 @@ class CourseImportServiceTest {
         AndRequirement root = (AndRequirement) existing.getPrerequisite();
         assertThat(root.getChildren()).hasSize(2);
     }
+
+    @Test
+    void importCoursePreservesExistingPrerequisiteWhenRequested() {
+        Course existing = new Course("COMPSCI 220", "Old Title", 3, "Old Description");
+        CourseRequirement originalPrerequisite = new CourseRequirement("MATH 131");
+        existing.setPrerequisite(originalPrerequisite);
+
+        CourseDefinition definition = new CourseDefinition(
+            "COMPSCI 220",
+            "Programming Methodology",
+            4,
+            "New Description",
+            null
+        );
+
+        when(courseRepository.findByCourseCodeIgnoreCase("COMPSCI 220")).thenReturn(Optional.of(existing));
+        when(courseRepository.save(any(Course.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        CourseImportService.CourseImportResult result = courseImportService.importCourse(definition, true);
+
+        assertThat(result.action()).isEqualTo(ImportAction.UPDATED);
+        assertThat(existing.getPrerequisite()).isEqualTo(originalPrerequisite);
+    }
 }

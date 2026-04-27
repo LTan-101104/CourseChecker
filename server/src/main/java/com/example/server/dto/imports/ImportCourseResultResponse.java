@@ -7,5 +7,6 @@ public record ImportCourseResultResponse(
     String descriptionExcerpt,
     String prerequisiteText,
     String warningMessage,
+    ImportWarningResponse warning,
     String errorMessage
 ) {}

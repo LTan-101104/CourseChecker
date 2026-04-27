@@ -8,6 +8,7 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,10 +19,13 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.example.server.dto.imports.ImportCourseResultResponse;
 import com.example.server.dto.imports.ImportJobResponse;
+import com.example.server.dto.imports.ImportWarningResponse;
 import com.example.server.imports.parser.ParsedCourseRecord;
+import com.example.server.imports.parser.ParserWarning;
 import com.example.server.imports.parser.PdfCourseCatalogParser;
 import com.example.server.imports.parser.PdfParseResult;
 import com.example.server.imports.parser.PdfTextExtractor;
+import com.example.server.imports.parser.PrerequisiteParseOutcome;
 import com.example.server.model.ImportCourseAction;
 import com.example.server.model.ImportCourseResult;
 import com.example.server.model.ImportJob;
@@ -94,7 +98,12 @@ public class PdfImportOrchestrator {
         job.setStartedAt(Instant.now());
         importJobRepository.save(job);
 
-        log.info("pdf import job={} status=RUNNING", job.getId());
+        log.info(
+            "pdf import job={} status=RUNNING source={} requestedBy={}",
+            job.getId(),
+            job.getSourcePageUrl(),
+            job.getRequestedBy()
+        );
         try {
             URI pdfUri = URI.create(job.getSourcePageUrl());
             job.setResolvedPdfUrl(pdfUri.toString());
@@ -106,6 +115,16 @@ public class PdfImportOrchestrator {
 
             job.setWarningCount(parseResult.warnings().size());
             job.setParsedCount(parseResult.records().size());
+            job.setPrerequisiteTextExtractedCount((int) parseResult.records().stream()
+                .filter(record -> record.prerequisiteText() != null && !record.prerequisiteText().isBlank())
+                .count());
+            job.setPrerequisiteParsedCount((int) parseResult.records().stream()
+                .filter(record -> record.prerequisiteParseOutcome() == PrerequisiteParseOutcome.PARSED)
+                .count());
+            job.setPrerequisiteParseFailedCount((int) parseResult.records().stream()
+                .filter(record -> record.prerequisiteParseOutcome() == PrerequisiteParseOutcome.UNSUPPORTED
+                    || record.prerequisiteParseOutcome() == PrerequisiteParseOutcome.MALFORMED)
+                .count());
 
             for (ParsedCourseRecord record : parseResult.records()) {
                 importSingleCourse(job, record);
@@ -127,14 +146,20 @@ public class PdfImportOrchestrator {
             job.setFinishedAt(Instant.now());
             importJobRepository.save(job);
             log.info(
-                "pdf import job={} status={} parsed={} inserted={} updated={} failed={} warnings={}",
+                "pdf import job={} status={} source={} resolved={} parsed={} inserted={} updated={} failed={} warnings={} prereqTextExtracted={} prereqParsed={} prereqParseFailed={} failedCourses={}",
                 job.getId(),
                 job.getStatus(),
+                job.getSourcePageUrl(),
+                job.getResolvedPdfUrl(),
                 job.getParsedCount(),
                 job.getInsertedCount(),
                 job.getUpdatedCount(),
                 job.getFailedCount(),
-                job.getWarningCount()
+                job.getWarningCount(),
+                job.getPrerequisiteTextExtractedCount(),
+                job.getPrerequisiteParsedCount(),
+                job.getPrerequisiteParseFailedCount(),
+                summarizeCourseCodesForFailures(job)
             );
         }
     }
@@ -145,11 +170,31 @@ public class PdfImportOrchestrator {
         resultRow.setTitle(record.courseDefinition().getTitle());
         resultRow.setDescriptionExcerpt(record.courseDefinition().getDescription());
         resultRow.setPrerequisiteText(record.prerequisiteText());
-        resultRow.setWarningMessage(record.warnings().isEmpty() ? null : String.join("; ", record.warnings()));
+        resultRow.setNormalizedPrerequisiteText(record.normalizedPrerequisiteText());
+
+        ParserWarning parserWarning = record.warnings().isEmpty() ? null : record.warnings().get(0);
+        if (parserWarning != null) {
+            resultRow.setWarningCode(parserWarning.code());
+            resultRow.setWarningDetail(parserWarning.message());
+            resultRow.setWarningMessage(parserWarning.message());
+            log.warn(
+                "pdf import prerequisite warning job={} course={} code={} raw={} normalized={} detail={}",
+                job.getId(),
+                record.courseDefinition().getCourseCode(),
+                parserWarning.code(),
+                parserWarning.rawPrerequisiteText(),
+                parserWarning.normalizedPrerequisiteText(),
+                parserWarning.message()
+            );
+        }
 
         try {
             CourseImportService.CourseImportResult importResult =
-                courseImportService.importCourse(record.courseDefinition());
+                courseImportService.importCourse(
+                    record.courseDefinition(),
+                    record.prerequisiteParseOutcome() == PrerequisiteParseOutcome.UNSUPPORTED
+                        || record.prerequisiteParseOutcome() == PrerequisiteParseOutcome.MALFORMED
+                );
             if (importResult.action() == CourseImportService.ImportAction.INSERTED) {
                 job.setInsertedCount(job.getInsertedCount() + 1);
                 resultRow.setAction(ImportCourseAction.INSERTED);
@@ -163,8 +208,18 @@ public class PdfImportOrchestrator {
             resultRow.setErrorMessage(exception.getMessage());
         }
 
-        resultRow.setJob(job);
+        job.addResult(resultRow);
         importCourseResultRepository.save(resultRow);
+    }
+
+    private String summarizeCourseCodesForFailures(ImportJob job) {
+        return job.getResults().stream()
+            .filter(result -> result.getAction() == ImportCourseAction.FAILED || result.getWarningCode() != null)
+            .map(ImportCourseResult::getCourseCode)
+            .filter(courseCode -> courseCode != null && !courseCode.isBlank())
+            .distinct()
+            .limit(5)
+            .collect(Collectors.joining(", "));
     }
 
     private URI validateAndNormalizeUrl(String value) {
@@ -205,6 +260,9 @@ public class PdfImportOrchestrator {
             job.getSkippedCount(),
             job.getFailedCount(),
             job.getWarningCount(),
+            job.getPrerequisiteTextExtractedCount(),
+            job.getPrerequisiteParsedCount(),
+            job.getPrerequisiteParseFailedCount(),
             job.getErrorMessage(),
             job.getSourceHash(),
             results
@@ -219,6 +277,12 @@ public class PdfImportOrchestrator {
             result.getDescriptionExcerpt(),
             result.getPrerequisiteText(),
             result.getWarningMessage(),
+            result.getWarningCode() == null ? null : new ImportWarningResponse(
+                result.getWarningCode(),
+                result.getWarningDetail(),
+                result.getPrerequisiteText(),
+                result.getNormalizedPrerequisiteText()
+            ),
             result.getErrorMessage()
         );
     }

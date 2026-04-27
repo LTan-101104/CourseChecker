@@ -31,6 +31,9 @@ class ImportModelsSmokeTest {
         job.setSkippedCount(0);
         job.setFailedCount(1);
         job.setWarningCount(2);
+        job.setPrerequisiteTextExtractedCount(5);
+        job.setPrerequisiteParsedCount(3);
+        job.setPrerequisiteParseFailedCount(2);
         job.setErrorMessage("warning");
         job.setSourceHash("abc");
 
@@ -41,6 +44,9 @@ class ImportModelsSmokeTest {
         result.setDescriptionExcerpt("desc");
         result.setPrerequisiteText("COMPSCI 187");
         result.setWarningMessage("warn");
+        result.setWarningCode("PREREQ_MALFORMED");
+        result.setWarningDetail("Malformed prerequisite expression");
+        result.setNormalizedPrerequisiteText("COMPSCI 187 OR");
         result.setErrorMessage("err");
         job.addResult(result);
 
@@ -59,6 +65,9 @@ class ImportModelsSmokeTest {
         assertThat(job.getSkippedCount()).isEqualTo(0);
         assertThat(job.getFailedCount()).isEqualTo(1);
         assertThat(job.getWarningCount()).isEqualTo(2);
+        assertThat(job.getPrerequisiteTextExtractedCount()).isEqualTo(5);
+        assertThat(job.getPrerequisiteParsedCount()).isEqualTo(3);
+        assertThat(job.getPrerequisiteParseFailedCount()).isEqualTo(2);
         assertThat(job.getErrorMessage()).isEqualTo("warning");
         assertThat(job.getSourceHash()).isEqualTo("abc");
         assertThat(job.getResults()).hasSize(1);
@@ -73,6 +82,9 @@ class ImportModelsSmokeTest {
         assertThat(result.getDescriptionExcerpt()).isEqualTo("desc");
         assertThat(result.getPrerequisiteText()).isEqualTo("COMPSCI 187");
         assertThat(result.getWarningMessage()).isEqualTo("warn");
+        assertThat(result.getWarningCode()).isEqualTo("PREREQ_MALFORMED");
+        assertThat(result.getWarningDetail()).isEqualTo("Malformed prerequisite expression");
+        assertThat(result.getNormalizedPrerequisiteText()).isEqualTo("COMPSCI 187 OR");
         assertThat(result.getErrorMessage()).isEqualTo("err");
 
         job.setResults(List.of(result));

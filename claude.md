@@ -136,8 +136,10 @@ docker compose up -d
 cd server && ./mvnw spring-boot:run
 
 # 3. Start the Vite frontend
-cd client && yarn dev
+cd client && corepack yarn dev
 ```
+
+Local development uses `coursechecker-local-admin-secret` unless `APP_ADMIN_SECRET` overrides it.
 
 ---
 

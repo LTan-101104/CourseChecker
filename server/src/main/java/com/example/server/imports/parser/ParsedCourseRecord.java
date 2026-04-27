@@ -7,5 +7,7 @@ import com.example.server.seed.CourseDefinition;
 public record ParsedCourseRecord(
     CourseDefinition courseDefinition,
     String prerequisiteText,
-    List<String> warnings
+    String normalizedPrerequisiteText,
+    PrerequisiteParseOutcome prerequisiteParseOutcome,
+    List<ParserWarning> warnings
 ) {}

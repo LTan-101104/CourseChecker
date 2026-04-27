@@ -65,6 +65,15 @@ public class ImportJob {
     @Column(name = "warning_count", nullable = false)
     private int warningCount;
 
+    @Column(name = "prerequisite_text_extracted_count", nullable = false)
+    private int prerequisiteTextExtractedCount;
+
+    @Column(name = "prerequisite_parsed_count", nullable = false)
+    private int prerequisiteParsedCount;
+
+    @Column(name = "prerequisite_parse_failed_count", nullable = false)
+    private int prerequisiteParseFailedCount;
+
     @Column(name = "error_message", columnDefinition = "TEXT")
     private String errorMessage;
 
@@ -109,6 +118,18 @@ public class ImportJob {
     public void setFailedCount(int failedCount) { this.failedCount = failedCount; }
     public int getWarningCount() { return warningCount; }
     public void setWarningCount(int warningCount) { this.warningCount = warningCount; }
+    public int getPrerequisiteTextExtractedCount() { return prerequisiteTextExtractedCount; }
+    public void setPrerequisiteTextExtractedCount(int prerequisiteTextExtractedCount) {
+        this.prerequisiteTextExtractedCount = prerequisiteTextExtractedCount;
+    }
+    public int getPrerequisiteParsedCount() { return prerequisiteParsedCount; }
+    public void setPrerequisiteParsedCount(int prerequisiteParsedCount) {
+        this.prerequisiteParsedCount = prerequisiteParsedCount;
+    }
+    public int getPrerequisiteParseFailedCount() { return prerequisiteParseFailedCount; }
+    public void setPrerequisiteParseFailedCount(int prerequisiteParseFailedCount) {
+        this.prerequisiteParseFailedCount = prerequisiteParseFailedCount;
+    }
     public String getErrorMessage() { return errorMessage; }
     public void setErrorMessage(String errorMessage) { this.errorMessage = errorMessage; }
     public String getSourceHash() { return sourceHash; }
