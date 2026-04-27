@@ -1,10 +1,14 @@
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Bell, BookOpen, CheckCircle2, XCircle, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useCompletedCourses } from "../context/CompletedCoursesContext";
+import { fetchCourseDetail, type CourseSummaryDTO } from "../api/courses";
+import { ApiError } from "../api/client";
+import { useCourseSearch } from "../hooks/useCourseSearch";
 import { mockCourses } from "../data/mockCourses";
 import { evaluateEligibility } from "../data/eligibilityEvaluator";
+import { mapCourseDetail } from "../utils/courseMappers";
 import type { Course, Transcript } from "../types";
 import "./DashboardPage.css";
 
@@ -27,6 +31,11 @@ export function DashboardPage() {
   const [query, setQuery] = useState("");
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [selectionError, setSelectionError] = useState<string | null>(null);
+  const [isSelectingCourse, setIsSelectingCourse] = useState(false);
+  const { results: searchResults, error: searchError } = useCourseSearch(query);
+
+  const suggestions = useMemo(() => searchResults.slice(0, 6), [searchResults]);
 
   // Stats
   const completedCount = transcript.completedCourses.length;
@@ -42,8 +51,11 @@ export function DashboardPage() {
   const eligibleCount = useMemo(
     () =>
       mockCourses.filter((c) => {
-        if (transcript.completedCourses.some((cc) => cc.courseCode === c.courseCode))
+        if (
+          transcript.completedCourses.some((cc) => cc.courseCode === c.courseCode)
+        ) {
           return false;
+        }
         return evaluateEligibility(c, transcript).isEligible;
       }).length,
     [transcript],
@@ -56,23 +68,9 @@ export function DashboardPage() {
     [selectedCourse, transcript],
   );
 
-  // Search suggestions
-  const suggestions = useMemo(() => {
-    if (!query.trim()) return [];
-    const q = query.toLowerCase();
-    return mockCourses
-      .filter(
-        (c) =>
-          c.courseCode.toLowerCase().includes(q) ||
-          c.title.toLowerCase().includes(q),
-      )
-      .slice(0, 6);
-  }, [query]);
-
   // Recent transcript (last 5 courses)
   const recentCourses = transcript.completedCourses.slice(-5).reverse();
 
-  // Avatar initials from current authenticated user.
   const avatarInitials = user?.displayName
     ? user.displayName
         .split(" ")
@@ -82,10 +80,24 @@ export function DashboardPage() {
         .toUpperCase()
     : "G";
 
-  function handleSelectCourse(course: Course) {
-    setSelectedCourse(course);
-    setQuery(`${course.courseCode} — ${course.title}`);
-    setShowDropdown(false);
+  async function handleSelectCourse(course: CourseSummaryDTO) {
+    setIsSelectingCourse(true);
+    setSelectionError(null);
+    try {
+      const detail = await fetchCourseDetail(course.courseCode);
+      setSelectedCourse(mapCourseDetail(detail));
+      setQuery(`${course.courseCode} — ${course.title}`);
+      setShowDropdown(false);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setSelectionError(err.message);
+      } else {
+        setSelectionError("Unable to load course details.");
+      }
+      setSelectedCourse(null);
+    } finally {
+      setIsSelectingCourse(false);
+    }
   }
 
   return (
@@ -120,11 +132,7 @@ export function DashboardPage() {
           value={eligibleCount}
           badge={`of ${notCompletedCount} remaining`}
         />
-        <StatCard
-          title="Credits Earned"
-          value={creditsEarned}
-          badge="of 120 req."
-        />
+        <StatCard title="Credits Earned" value={creditsEarned} badge="of 120 req." />
       </div>
 
       {/* Bottom Section */}
@@ -151,6 +159,7 @@ export function DashboardPage() {
                   onChange={(e) => {
                     setQuery(e.target.value);
                     setSelectedCourse(null);
+                    setSelectionError(null);
                     setShowDropdown(true);
                   }}
                   onFocus={() => setShowDropdown(true)}
@@ -162,7 +171,9 @@ export function DashboardPage() {
                       <li
                         key={c.courseCode}
                         className="search-dropdown-item"
-                        onMouseDown={() => handleSelectCourse(c)}
+                        onMouseDown={() => {
+                          void handleSelectCourse(c);
+                        }}
                       >
                         <span className="dropdown-code">{c.courseCode}</span>
                         <span className="dropdown-title">{c.title}</span>
@@ -173,8 +184,13 @@ export function DashboardPage() {
               </div>
             </div>
 
+            {query.trim() && searchError && (
+              <p className="result-no-prereq">{searchError}</p>
+            )}
+            {selectionError && <p className="result-no-prereq">{selectionError}</p>}
+
             {/* Result Preview */}
-            {selectedCourse && eligibilityResult && (
+            {selectedCourse && eligibilityResult && !isSelectingCourse && (
               <div
                 className={`result-preview ${eligibilityResult.isEligible ? "eligible" : "not-eligible"}`}
               >

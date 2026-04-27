@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   Bell,
   CheckCircle2,
@@ -8,14 +8,15 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useCompletedCourses } from "../context/CompletedCoursesContext";
+import { fetchCourseDetail, type CourseSummaryDTO } from "../api/courses";
+import { ApiError } from "../api/client";
+import { useCourseSearch } from "../hooks/useCourseSearch";
 import { mockCourses } from "../data/mockCourses";
+import { mapCourseDetail } from "../utils/courseMappers";
 import type { Course, Requirement, Transcript } from "../types";
 import "./EligibilityCheckPage.css";
 
 const courseTitleMap = new Map(mockCourses.map((c) => [c.courseCode, c.title]));
-const courseCreditsMap = new Map(
-  mockCourses.map((c) => [c.courseCode, c.credits]),
-);
 
 // ── Helpers ──────────────────────────────────────────────
 
@@ -177,6 +178,9 @@ export function EligibilityCheckPage() {
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [hasChecked, setHasChecked] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [isSelectingCourse, setIsSelectingCourse] = useState(false);
+  const [selectionError, setSelectionError] = useState<string | null>(null);
+  const { results: searchResults, error: searchError } = useCourseSearch(query);
 
   const avatarInitials = user?.displayName
     ? user.displayName
@@ -187,23 +191,27 @@ export function EligibilityCheckPage() {
         .toUpperCase()
     : "G";
 
-  const suggestions = useMemo(() => {
-    if (!query.trim()) return [];
-    const q = query.toLowerCase();
-    return mockCourses
-      .filter(
-        (c) =>
-          c.courseCode.toLowerCase().includes(q) ||
-          c.title.toLowerCase().includes(q),
-      )
-      .slice(0, 8);
-  }, [query]);
+  const suggestions = useMemo(() => searchResults.slice(0, 8), [searchResults]);
 
-  function handleSelect(course: Course) {
-    setSelectedCourse(course);
-    setQuery(`${course.courseCode} — ${course.title}`);
-    setShowDropdown(false);
-    setHasChecked(false);
+  async function handleSelect(course: CourseSummaryDTO) {
+    setIsSelectingCourse(true);
+    setSelectionError(null);
+    try {
+      const detail = await fetchCourseDetail(course.courseCode);
+      setSelectedCourse(mapCourseDetail(detail));
+      setQuery(`${course.courseCode} — ${course.title}`);
+      setShowDropdown(false);
+      setHasChecked(false);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setSelectionError(err.message);
+      } else {
+        setSelectionError("Unable to load course details.");
+      }
+      setSelectedCourse(null);
+    } finally {
+      setIsSelectingCourse(false);
+    }
   }
 
   function handleCheck() {
@@ -257,6 +265,7 @@ export function EligibilityCheckPage() {
                   setQuery(e.target.value);
                   setSelectedCourse(null);
                   setHasChecked(false);
+                  setSelectionError(null);
                   setShowDropdown(true);
                 }}
                 onFocus={() => setShowDropdown(true)}
@@ -268,7 +277,9 @@ export function EligibilityCheckPage() {
                     <li
                       key={c.courseCode}
                       className="sel-dropdown-item"
-                      onMouseDown={() => handleSelect(c)}
+                      onMouseDown={() => {
+                        void handleSelect(c);
+                      }}
                     >
                       <span className="dropdown-code">{c.courseCode}</span>
                       <span className="dropdown-title">{c.title}</span>
@@ -283,11 +294,15 @@ export function EligibilityCheckPage() {
           <button
             className="check-btn"
             onClick={handleCheck}
-            disabled={!selectedCourse}
+            disabled={!selectedCourse || isSelectingCourse}
           >
             Check Eligibility
           </button>
         </div>
+        {query.trim() && searchError && (
+          <p className="elig-subtitle">{searchError}</p>
+        )}
+        {selectionError && <p className="elig-subtitle">{selectionError}</p>}
       </div>
 
       {/* Result Section */}
@@ -322,8 +337,7 @@ export function EligibilityCheckPage() {
                 <div className="ci-header">
                   <span className="ci-code">{selectedCourse.courseCode}</span>
                   <span className="ci-badge">
-                    {courseCreditsMap.get(selectedCourse.courseCode) ?? "?"}{" "}
-                    credits
+                    {selectedCourse.credits || "?"} credits
                   </span>
                 </div>
                 <p className="ci-title">{selectedCourse.title}</p>
@@ -378,7 +392,25 @@ export function EligibilityCheckPage() {
                   />
                 ) : req.type === "OR" ? (
                   <OrReqCard key={i} req={req} completed={completed} />
-                ) : null,
+                ) : (
+                  // Nested AND inside top-level AND is rendered as flat cards
+                  req.children.map((child, j) =>
+                    child.type === "COURSE" ? (
+                      <CourseReqCard
+                        key={`${i}-${j}-${child.requiredCourseCode}`}
+                        req={child}
+                        completed={completed}
+                        index={j}
+                      />
+                    ) : child.type === "OR" ? (
+                      <OrReqCard
+                        key={`${i}-${j}`}
+                        req={child}
+                        completed={completed}
+                      />
+                    ) : null,
+                  )
+                ),
               )
             )}
           </div>

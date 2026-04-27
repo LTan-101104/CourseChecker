@@ -135,6 +135,13 @@
   align-content: start;
 }
 
+.result-empty {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 14px;
+  color: #737373;
+}
+
 /* ── Course Card ─────────────────────────── */
 
 .course-card {

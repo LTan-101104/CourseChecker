@@ -19,6 +19,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Pageable;
 
 import com.example.server.dto.CourseDetailDTO;
+import com.example.server.dto.RequirementNodeResponse;
+import com.example.server.dto.RequirementNodeType;
 import com.example.server.dto.CourseSummaryDTO;
 import com.example.server.exception.CourseNotFoundException;
 import com.example.server.model.AndRequirement;
@@ -111,6 +113,33 @@ class CourseCatalogServiceTest {
             "Programming Methodology",
             4,
             "Object-oriented design and software engineering.",
+            new RequirementNodeResponse(
+                RequirementNodeType.AND,
+                null,
+                List.of(
+                    new RequirementNodeResponse(
+                        RequirementNodeType.COURSE,
+                        "COMPSCI 187",
+                        List.of()
+                    ),
+                    new RequirementNodeResponse(
+                        RequirementNodeType.OR,
+                        null,
+                        List.of(
+                            new RequirementNodeResponse(
+                                RequirementNodeType.COURSE,
+                                "MATH 131",
+                                List.of()
+                            ),
+                            new RequirementNodeResponse(
+                                RequirementNodeType.COURSE,
+                                "MATH 132",
+                                List.of()
+                            )
+                        )
+                    )
+                )
+            ),
             "COMPSCI 187 AND (MATH 131 OR MATH 132)"
         ));
     }

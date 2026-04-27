@@ -1,24 +1,19 @@
 import { useNavigate } from "react-router-dom";
-import type { Course } from "../types";
-import { formatRequirement } from "../utils/formatRequirement";
+import type { CourseSummaryDTO } from "../api/courses";
 
-export function CourseCard({ course }: { course: Course }) {
+export function CourseCard({ course }: { course: CourseSummaryDTO }) {
   const navigate = useNavigate();
 
   return (
     <div className="course-card">
       <div className="card-top">
         <span className="card-code">{course.courseCode}</span>
-        <span className="card-credits">{course.credits} cr</span>
+        <span className="card-credits">{course.credits ?? "—"} cr</span>
       </div>
       <div className="card-title">{course.title}</div>
       <div className="card-prereq">
         <span className="prereq-label">Prerequisites</span>
-        <span className="prereq-value">
-          {course.prerequisite
-            ? formatRequirement(course.prerequisite)
-            : "None"}
-        </span>
+        <span className="prereq-value">View details for prerequisite tree</span>
       </div>
       <div className="card-actions">
         <button

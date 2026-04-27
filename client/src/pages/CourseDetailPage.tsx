@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   ChevronRight,
@@ -8,13 +9,12 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { mockCourses } from "../data/mockCourses";
+import { fetchCourseDetail } from "../api/courses";
+import { ApiError } from "../api/client";
+import { mapCourseDetail } from "../utils/courseMappers";
 import { formatRequirement } from "../utils/formatRequirement";
-import type { Requirement } from "../types";
+import type { Course, Requirement } from "../types";
 import "./CourseDetailPage.css";
-
-/** Map course codes to course objects for prereq card lookups */
-const courseMap = new Map(mockCourses.map((c) => [c.courseCode, c]));
 
 /** Count total leaf course requirements in a prerequisite tree */
 function countPrereqs(req: Requirement): number {
@@ -35,10 +35,6 @@ function getCourseLevel(courseCode: string): string {
   return `${hundreds}-Level`;
 }
 
-/**
- * Build the visual prereq card list from a requirement tree.
- * Returns an array of render items: either a prereq card or a divider.
- */
 type PrereqItem =
   | {
       kind: "card";
@@ -52,12 +48,11 @@ type PrereqItem =
 function buildPrereqItems(req: Requirement): PrereqItem[] {
   switch (req.type) {
     case "COURSE": {
-      const c = courseMap.get(req.requiredCourseCode);
       return [
         {
           kind: "card",
           code: req.requiredCourseCode,
-          title: c?.title ?? req.requiredCourseCode,
+          title: req.requiredCourseCode,
           badge: "Required",
           badgeType: "required",
         },
@@ -67,7 +62,6 @@ function buildPrereqItems(req: Requirement): PrereqItem[] {
       const items: PrereqItem[] = [];
       req.children.forEach((child, i) => {
         if (i > 0) {
-          // If next child is an OR group, show "AND one of the following"
           const text = child.type === "OR" ? "AND one of the following" : "AND";
           items.push({ kind: "divider", text });
         }
@@ -81,19 +75,16 @@ function buildPrereqItems(req: Requirement): PrereqItem[] {
         if (i > 0) {
           items.push({ kind: "divider", text: "OR" });
         }
-        // Label options A, B, C...
         const label = `Option ${String.fromCharCode(65 + i)}`;
         if (child.type === "COURSE") {
-          const c = courseMap.get(child.requiredCourseCode);
           items.push({
             kind: "card",
             code: child.requiredCourseCode,
-            title: c?.title ?? child.requiredCourseCode,
+            title: child.requiredCourseCode,
             badge: label,
             badgeType: "option",
           });
         } else {
-          // Nested composite inside OR — flatten
           items.push(...buildPrereqItems(child));
         }
       });
@@ -106,9 +97,66 @@ export function CourseDetailPage() {
   const { user } = useAuth();
   const { courseCode } = useParams<{ courseCode: string }>();
   const navigate = useNavigate();
+  const decodedCode = useMemo(() => decodeURIComponent(courseCode ?? ""), [courseCode]);
 
-  const decodedCode = decodeURIComponent(courseCode ?? "");
-  const course = mockCourses.find((c) => c.courseCode === decodedCode);
+  const [course, setCourse] = useState<Course | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!decodedCode) {
+      setCourse(null);
+      setIsLoading(false);
+      setError("Course code is missing.");
+      return;
+    }
+
+    let isCancelled = false;
+    void (async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const detail = await fetchCourseDetail(decodedCode);
+        if (!isCancelled) {
+          setCourse(mapCourseDetail(detail));
+        }
+      } catch (err) {
+        if (isCancelled) {
+          return;
+        }
+        if (err instanceof ApiError) {
+          setError(err.message);
+        } else {
+          setError("Failed to load course details.");
+        }
+        setCourse(null);
+      } finally {
+        if (!isCancelled) {
+          setIsLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [decodedCode]);
+
+  if (isLoading) {
+    return (
+      <div className="detail-page">
+        <p>Loading course details...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="detail-page">
+        <p>{error}</p>
+      </div>
+    );
+  }
 
   if (!course) {
     return (
@@ -189,7 +237,7 @@ export function CourseDetailPage() {
                       </div>
                     ) : (
                       <div
-                        key={i}
+                        key={`${item.code}-${i}`}
                         className="prereq-card prereq-card-clickable"
                         onClick={() =>
                           navigate(
@@ -248,7 +296,7 @@ export function CourseDetailPage() {
             <span className="info-card-title">Course Information</span>
             <div className="info-row">
               <span className="info-label">Credits</span>
-              <span className="info-value">{course.credits}</span>
+              <span className="info-value">{course.credits || "—"}</span>
             </div>
             <div className="info-divider" />
             <div className="info-row">

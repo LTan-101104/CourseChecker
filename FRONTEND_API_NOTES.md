@@ -159,6 +159,21 @@ GET http://localhost:8080/api/v1/courses/COMPSCI%20220
   "title": "Programming Methodology",
   "credits": 4,
   "description": "Object-oriented design and software engineering.",
+  "prerequisite": {
+    "type": "AND",
+    "courseCode": null,
+    "children": [
+      { "type": "COURSE", "courseCode": "COMPSCI 187", "children": [] },
+      {
+        "type": "OR",
+        "courseCode": null,
+        "children": [
+          { "type": "COURSE", "courseCode": "MATH 131", "children": [] },
+          { "type": "COURSE", "courseCode": "MATH 132", "children": [] }
+        ]
+      }
+    ]
+  },
   "prerequisiteDescription": "COMPSCI 187 AND (MATH 131 OR MATH 132)"
 }
 ```
@@ -183,7 +198,14 @@ type CourseDetailDTO = {
   title: string;
   credits: number | null;
   description: string | null;
+  prerequisite: RequirementNodeDTO | null;
   prerequisiteDescription: string | null;
+};
+
+type RequirementNodeDTO = {
+  type: "COURSE" | "AND" | "OR";
+  courseCode: string | null;
+  children: RequirementNodeDTO[];
 };
 ```
 
