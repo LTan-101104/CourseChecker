@@ -14,20 +14,77 @@ import com.example.server.seed.RequirementDefinition;
 public class RequirementExpressionParser {
 
     private static final Pattern COURSE_PATTERN =
-        Pattern.compile("^[A-Z]{2,}\\s*\\d{3}[A-Z]?");
+        Pattern.compile("^[A-Z&-]{2,}\\s*\\d{3}[A-Z]?");
+    private static final Pattern IMPLIED_COURSE_PATTERN =
+        Pattern.compile("^\\d{3}[A-Z]?");
+    private static final Pattern COURSE_WITH_AMPERSAND_PATTERN =
+        Pattern.compile("([A-Z&-]{2,})\\s*(\\d{3}[A-Z]?)\\s*&\\s*(\\d{3}[A-Z]?)");
+    private static final Pattern COURSE_WITH_IMPLIED_OR_PATTERN =
+        Pattern.compile("([A-Z&-]{2,})\\s*(\\d{3}[A-Z]?)\\s*\\(\\s*OR\\s*(\\d{3}[A-Z]?)\\s*\\)");
 
     public RequirementDefinition parse(String rawValue) {
-        if (rawValue == null || rawValue.isBlank()) {
+        ParseResult result = parseDetailed(rawValue);
+        if (result.outcome() == PrerequisiteParseOutcome.NOT_PRESENT) {
             return null;
+        }
+        if (result.outcome() != PrerequisiteParseOutcome.PARSED) {
+            throw new IllegalArgumentException(result.message());
+        }
+        return result.requirement();
+    }
+
+    public ParseResult parseDetailed(String rawValue) {
+        if (rawValue == null || rawValue.isBlank()) {
+            return new ParseResult(null, null, PrerequisiteParseOutcome.NOT_PRESENT, "No prerequisite text present");
         }
 
         String normalized = normalize(rawValue);
-        TokenStream tokenStream = new TokenStream(tokenize(normalized));
-        RequirementDefinition result = parseOr(tokenStream);
-        if (!tokenStream.isEnd()) {
-            throw new IllegalArgumentException("Unable to parse prerequisite expression: " + rawValue);
+        if (normalized.isBlank()) {
+            return new ParseResult(
+                null,
+                normalized,
+                PrerequisiteParseOutcome.UNSUPPORTED,
+                "Prerequisite text did not contain a supported course-only expression"
+            );
         }
-        return result;
+
+        TokenStream tokenStream = new TokenStream(tokenize(normalized));
+        if (tokenStream.isEnd()) {
+            return new ParseResult(
+                null,
+                normalized,
+                PrerequisiteParseOutcome.UNSUPPORTED,
+                "Prerequisite text did not contain a supported course-only expression"
+            );
+        }
+        if (tokenStream.tokens().stream().noneMatch(token -> token.type() == TokenType.COURSE)) {
+            return new ParseResult(
+                null,
+                normalized,
+                PrerequisiteParseOutcome.UNSUPPORTED,
+                "Prerequisite text did not contain a supported course-only expression"
+            );
+        }
+
+        try {
+            RequirementDefinition result = parseOr(tokenStream);
+            if (!tokenStream.isEnd()) {
+                return new ParseResult(
+                    null,
+                    normalized,
+                    PrerequisiteParseOutcome.MALFORMED,
+                    "Malformed prerequisite expression after normalization: " + normalized
+                );
+            }
+            return new ParseResult(result, normalized, PrerequisiteParseOutcome.PARSED, null);
+        } catch (IllegalArgumentException exception) {
+            return new ParseResult(
+                null,
+                normalized,
+                PrerequisiteParseOutcome.MALFORMED,
+                "Malformed prerequisite expression after normalization: " + normalized
+            );
+        }
     }
 
     private RequirementDefinition parseOr(TokenStream stream) {
@@ -73,6 +130,7 @@ public class RequirementExpressionParser {
     private List<Token> tokenize(String value) {
         List<Token> tokens = new ArrayList<>();
         int i = 0;
+        String lastSubject = null;
         while (i < value.length()) {
             char current = value.charAt(i);
             if (Character.isWhitespace(current)) {
@@ -106,7 +164,16 @@ public class RequirementExpressionParser {
             if (courseMatcher.find()) {
                 String course = normalizeCourseCode(courseMatcher.group());
                 tokens.add(new Token(TokenType.COURSE, course));
+                lastSubject = extractSubject(course);
                 i += courseMatcher.group().length();
+                continue;
+            }
+
+            Matcher impliedCourseMatcher = IMPLIED_COURSE_PATTERN.matcher(remaining);
+            if (lastSubject != null && impliedCourseMatcher.find()) {
+                String course = lastSubject + " " + impliedCourseMatcher.group();
+                tokens.add(new Token(TokenType.COURSE, normalizeCourseCode(course)));
+                i += impliedCourseMatcher.group().length();
                 continue;
             }
 
@@ -116,19 +183,64 @@ public class RequirementExpressionParser {
     }
 
     private String normalize(String value) {
-        return value.toUpperCase(Locale.ROOT)
+        String normalized = " " + value.toUpperCase(Locale.ROOT) + " ";
+        normalized = normalized
+            .replace('\n', ' ')
             .replace("PREREQUISITE:", " ")
             .replace("PREREQUISITES:", " ")
             .replace("PREREQ:", " ")
+            .replace("PREREQS:", " ")
+            .replace("ONE OF THE FOLLOWING COURSES", " ")
+            .replace("ONE OF THE FOLLOWING", " ")
             .replace("ONE OF", " ")
-            .replace(",", " AND ")
-            .replace(";", " AND ")
-            .replaceAll("\\s+", " ")
-            .trim();
+            .replace("EITHER", " ")
+            .replace("BOTH", " ")
+            .replace("OR ENGLISH WRITING WAIVER", " ")
+            .replace("COURSES:", " ")
+            .replace("COURSE:", " ");
+        normalized = COURSE_WITH_AMPERSAND_PATTERN.matcher(normalized).replaceAll("$1 $2 AND $1 $3");
+        normalized = COURSE_WITH_IMPLIED_OR_PATTERN.matcher(normalized).replaceAll("($1 $2 OR $1 $3)");
+        normalized = normalized.replaceAll(
+            "\\b(?:ALL\\s+)?WITH\\s+(?:A\\s+)?(?:MINIMUM\\s+)?GRADE\\s+OF\\s+[ABCDF][+-]?\\s+OR\\s+BETTER\\b",
+            " "
+        );
+        normalized = normalized.replaceAll(
+            "\\b(?:ALL\\s+)?WITH\\s+(?:A\\s+)?(?:MINIMUM\\s+)?GRADE\\s+OF\\s+[ABCDF][+-]?\\b",
+            " "
+        );
+        normalized = normalized.replaceAll("\\((GEN\\.[^)]*)\\)", " ");
+        normalized = normalized.replaceAll("\\((BASIC MATH SKILLS[^)]*)\\)", " ");
+        normalized = normalized.replaceAll("\\((PART [A-Z][^)]*)\\)", " ");
+        normalized = normalized.replaceAll("\\((PREVIOUSLY[^)]*)\\)", " ");
+        normalized = normalized.replaceAll("PREVIOUSLY\\s+[A-Z&-]{2,}\\s*\\d{3}[A-Z]?", " ");
+        normalized = normalized.replaceAll("\\bCS\\s+MAJORS?\\s*:", " ");
+        normalized = normalized.replaceAll("\\bINFORM\\s+MAJORS?\\s*:", " ");
+        normalized = normalized.replaceAll("\\bCICS\\s+MAJORS?\\s*:", " ");
+        normalized = normalized.replaceAll("\\bNON[- ]CS\\s+MAJORS?\\s*:", " ");
+        normalized = normalized.replaceAll("\\bR1\\b", " ");
+        normalized = normalized.replaceAll("SCORE OF \\d+ OR HIGHER ON THE MATH PLACEMENT TEST(?: PART [A-Z])?", " ");
+        normalized = normalized.replaceAll("COMPLETION OF THE\\s+", " ");
+        normalized = normalized.replaceAll("GRADE OF [ABCDF][+-]?", " ");
+        normalized = normalized.replaceAll("\\bMATH PLACEMENT TEST\\b", " ");
+        normalized = normalized.replaceAll("\\bPART [A-Z]\\b", " ");
+        normalized = normalized.replaceAll("\\bGEN\\.? ED\\.? [A-Z0-9]+\\b", " ");
+        normalized = normalized.replaceAll("(?<=\\d)\\s*;\\s*(?=[A-Z\\d])", " OR ");
+        normalized = normalized.replace(';', ' ');
+        normalized = normalized.replace(',', ' ');
+        normalized = normalized.replaceAll("\\s+/\\s+", " OR ");
+        normalized = normalized.replaceAll("\\(\\s*(OR|AND)\\s+", "(");
+        normalized = normalized.replaceAll("\\(\\s*\\)", " ");
+        normalized = normalized.replaceAll("\\s+", " ").trim();
+        return normalized;
     }
 
     private String normalizeCourseCode(String value) {
         return value.replaceAll("\\s+", " ").trim();
+    }
+
+    private String extractSubject(String courseCode) {
+        int firstSpace = courseCode.indexOf(' ');
+        return firstSpace < 0 ? null : courseCode.substring(0, firstSpace);
     }
 
     private enum TokenType {
@@ -140,6 +252,14 @@ public class RequirementExpressionParser {
     }
 
     private record Token(TokenType type, String value) {
+    }
+
+    public record ParseResult(
+        RequirementDefinition requirement,
+        String normalizedExpression,
+        PrerequisiteParseOutcome outcome,
+        String message
+    ) {
     }
 
     private static class TokenStream {
@@ -160,6 +280,10 @@ public class RequirementExpressionParser {
             }
             index++;
             return true;
+        }
+
+        private List<Token> tokens() {
+            return tokens;
         }
 
         private boolean canStartPrimary() {

@@ -42,6 +42,15 @@ public class ImportCourseResult {
     @Column(name = "warning_message", columnDefinition = "TEXT")
     private String warningMessage;
 
+    @Column(name = "warning_code", length = 100)
+    private String warningCode;
+
+    @Column(name = "warning_detail", columnDefinition = "TEXT")
+    private String warningDetail;
+
+    @Column(name = "normalized_prerequisite_text", columnDefinition = "TEXT")
+    private String normalizedPrerequisiteText;
+
     @Column(name = "error_message", columnDefinition = "TEXT")
     private String errorMessage;
 
@@ -61,6 +70,14 @@ public class ImportCourseResult {
     public void setPrerequisiteText(String prerequisiteText) { this.prerequisiteText = prerequisiteText; }
     public String getWarningMessage() { return warningMessage; }
     public void setWarningMessage(String warningMessage) { this.warningMessage = warningMessage; }
+    public String getWarningCode() { return warningCode; }
+    public void setWarningCode(String warningCode) { this.warningCode = warningCode; }
+    public String getWarningDetail() { return warningDetail; }
+    public void setWarningDetail(String warningDetail) { this.warningDetail = warningDetail; }
+    public String getNormalizedPrerequisiteText() { return normalizedPrerequisiteText; }
+    public void setNormalizedPrerequisiteText(String normalizedPrerequisiteText) {
+        this.normalizedPrerequisiteText = normalizedPrerequisiteText;
+    }
     public String getErrorMessage() { return errorMessage; }
     public void setErrorMessage(String errorMessage) { this.errorMessage = errorMessage; }
 }

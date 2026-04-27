@@ -72,7 +72,7 @@ Course(COMPSCI 220)
 ## Prerequisites
 
 - **Java 17+** (for Spring Boot)
-- **Node.js 18+** and **Yarn** (for the Vite frontend)
+- **Node.js 18+** with **Corepack** enabled for the Vite frontend
 - **Docker** and **Docker Compose** (for PostgreSQL)
 
 ## Getting Started
@@ -140,13 +140,28 @@ Each response includes a `jobId`. Poll each job until terminal status:
 ```bash
 JOB_ID="<paste-job-id>"
 curl -sS -H "X-Admin-Secret: $ADMIN_SECRET" \
-  "$API_BASE/api/v1/admin/imports/$JOB_ID"
+  "$API_BASE/api/v1/admin/imports/$JOB_ID?includeResults=true"
 ```
 
 Terminal status values:
 - `SUCCEEDED`: import completed successfully
 - `PARTIAL_SUCCESS`: usable data imported, inspect warnings/errors
 - `FAILED`: import failed, inspect `errorMessage` and job results
+
+Import jobs now include parser diagnostics:
+
+- `prerequisiteTextExtractedCount`: courses where prerequisite text was found in the PDF
+- `prerequisiteParsedCount`: courses where a prerequisite tree was successfully built
+- `prerequisiteParseFailedCount`: courses imported with warning details because prerequisite parsing failed
+
+Per-course warning objects include:
+
+- `warning.code`
+- `warning.detail`
+- `warning.rawPrerequisiteText`
+- `warning.normalizedPrerequisiteText`
+
+When a prerequisite cannot be parsed, inserts still proceed, updates preserve any existing prerequisite tree, and the job usually finishes as `PARTIAL_SUCCESS` so the warning can be inspected.
 
 Inspect per-course results:
 
@@ -165,8 +180,8 @@ curl -sS "$API_BASE/api/v1/courses/search?q=COMPSCI"
 
 ```bash
 cd client
-yarn install   # first time only
-yarn dev
+corepack yarn install   # first time only
+corepack yarn dev
 ```
 
 The UI is available at `http://localhost:5173`.

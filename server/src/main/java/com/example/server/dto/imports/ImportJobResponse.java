@@ -20,6 +20,9 @@ public record ImportJobResponse(
     int skippedCount,
     int failedCount,
     int warningCount,
+    int prerequisiteTextExtractedCount,
+    int prerequisiteParsedCount,
+    int prerequisiteParseFailedCount,
     String errorMessage,
     String sourceHash,
     List<ImportCourseResultResponse> results

@@ -17,7 +17,9 @@ public class PdfCourseCatalogParser {
         "^(?<code>[A-Z]{2,}\\s*\\d{3}[A-Z]?)\\s{2,}(?<title>.+?)\\s*$"
     );
     private static final Pattern CREDITS_PATTERN = Pattern.compile("(?i)(?<credits>\\d+)\\s+credits?\\.");
-    private static final Pattern PREREQ_PATTERN = Pattern.compile("(?i)prerequisite[s]?:\\s*(?<prereq>.*?)(?:\\.\\s|$)");
+    private static final Pattern PREREQ_PATTERN = Pattern.compile(
+        "(?i)prerequisite[s]?\\s*:\\s*(?<prereq>.*?)(?:\\.\\s*(?:\\d+\\s+credits?\\.)?|$)"
+    );
 
     private final RequirementExpressionParser requirementExpressionParser;
 
@@ -31,17 +33,30 @@ public class PdfCourseCatalogParser {
 
         List<CourseBlock> blocks = splitIntoBlocks(text);
         for (CourseBlock block : blocks) {
-            List<String> recordWarnings = new ArrayList<>();
+            List<ParserWarning> recordWarnings = new ArrayList<>();
             RequirementDefinition prerequisite = null;
+            String normalizedPrerequisiteText = null;
+            PrerequisiteParseOutcome prerequisiteParseOutcome = PrerequisiteParseOutcome.NOT_PRESENT;
             if (block.prerequisiteText != null && !block.prerequisiteText.isBlank()) {
-                try {
-                    prerequisite = requirementExpressionParser.parse(block.prerequisiteText);
-                } catch (IllegalArgumentException exception) {
-                    recordWarnings.add("Could not parse prerequisite expression");
-                    warnings.add(new ParserWarning(
-                        "PREREQ_PARSE",
-                        "Course " + block.courseCode + ": " + exception.getMessage()
-                    ));
+                RequirementExpressionParser.ParseResult parseResult =
+                    requirementExpressionParser.parseDetailed(block.prerequisiteText);
+                normalizedPrerequisiteText = parseResult.normalizedExpression();
+                prerequisiteParseOutcome = parseResult.outcome();
+                if (parseResult.outcome() == PrerequisiteParseOutcome.PARSED) {
+                    prerequisite = parseResult.requirement();
+                } else {
+                    String warningCode = parseResult.outcome() == PrerequisiteParseOutcome.UNSUPPORTED
+                        ? "PREREQ_UNSUPPORTED"
+                        : "PREREQ_MALFORMED";
+                    ParserWarning warning = new ParserWarning(
+                        warningCode,
+                        parseResult.message(),
+                        block.courseCode,
+                        block.prerequisiteText,
+                        parseResult.normalizedExpression()
+                    );
+                    recordWarnings.add(warning);
+                    warnings.add(warning);
                 }
             }
 
@@ -52,7 +67,13 @@ public class PdfCourseCatalogParser {
                 block.description,
                 prerequisite
             );
-            records.add(new ParsedCourseRecord(courseDefinition, block.prerequisiteText, recordWarnings));
+            records.add(new ParsedCourseRecord(
+                courseDefinition,
+                block.prerequisiteText,
+                normalizedPrerequisiteText,
+                prerequisiteParseOutcome,
+                recordWarnings
+            ));
         }
 
         return new PdfParseResult(records, warnings);

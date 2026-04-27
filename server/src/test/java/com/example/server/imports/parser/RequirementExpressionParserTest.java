@@ -20,4 +20,48 @@ class RequirementExpressionParserTest {
         assertThat(root.getChildren()).hasSize(2);
         assertThat(root.getChildren().get(1).getType()).isEqualTo(RequirementDefinition.Type.OR);
     }
+
+    @Test
+    void parseIgnoresGradeAndPreviouslyClauses() {
+        RequirementDefinition root =
+            parser.parse("CICS 110 (previously INFO 190S) or COMPSCI 121 with a grade of C or better");
+
+        assertThat(root.getType()).isEqualTo(RequirementDefinition.Type.OR);
+        assertThat(root.getChildren()).extracting(RequirementDefinition::getCourseCode)
+            .containsExactly("CICS 110", "COMPSCI 121");
+    }
+
+    @Test
+    void parseInfersMissingSubjectWithinGroupedAlternatives() {
+        RequirementDefinition root =
+            parser.parse("COMPSCI 240 (or 250) and MATH 132");
+
+        assertThat(root.getType()).isEqualTo(RequirementDefinition.Type.AND);
+        RequirementDefinition alternative = root.getChildren().get(0);
+        assertThat(alternative.getType()).isEqualTo(RequirementDefinition.Type.OR);
+        assertThat(alternative.getChildren()).extracting(RequirementDefinition::getCourseCode)
+            .containsExactly("COMPSCI 240", "COMPSCI 250");
+    }
+
+    @Test
+    void parseSupportsMajorSpecificBranchesSeparatedBySemicolon() {
+        RequirementDefinition root = parser.parse(
+            "CS Majors: COMPSCI 220 and COMPSCI 230; INFORM Majors: INFO 248 and CICS 210"
+        );
+
+        assertThat(root.getType()).isEqualTo(RequirementDefinition.Type.OR);
+        assertThat(root.getChildren()).hasSize(2);
+        assertThat(root.getChildren()).allMatch(child -> child.getType() == RequirementDefinition.Type.AND);
+    }
+
+    @Test
+    void parseDetailedFlagsUnsupportedNonCourseOnlyPrerequisites() {
+        RequirementExpressionParser.ParseResult result = parser.parseDetailed(
+            "R1 (or a score of 15 or higher on the math placement test Part A)"
+        );
+
+        assertThat(result.outcome()).isEqualTo(PrerequisiteParseOutcome.UNSUPPORTED);
+        assertThat(result.requirement()).isNull();
+        assertThat(result.message()).contains("supported course-only expression");
+    }
 }
