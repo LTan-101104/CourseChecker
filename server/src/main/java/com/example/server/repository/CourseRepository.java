@@ -1,5 +1,6 @@
 package com.example.server.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,4 +26,6 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     boolean existsByCourseCode(String courseCode);
 
     boolean existsByCourseCodeIgnoreCase(String courseCode);
+
+    List<Course> findByCourseCodeIn(Collection<String> courseCodes);
 }

@@ -81,12 +81,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(currentUser);
       setAuthError(null);
     } catch (error) {
-      persistToken(null);
-      setUser(null);
-      if (error instanceof ApiError) {
+      if (error instanceof ApiError && error.status === 401) {
+        // Token is genuinely invalid — clear it so the user goes to login.
+        persistToken(null);
+        setUser(null);
         setAuthError(error.message);
       } else {
-        setAuthError("Unable to restore session");
+        // Transient failure (server restarting, network hiccup) — keep the
+        // stored token so the session survives and the user isn't logged out.
+        setUser(null);
+        setAuthError("Unable to restore session — please refresh");
       }
     } finally {
       setIsInitializing(false);

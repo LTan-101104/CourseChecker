@@ -4,5 +4,7 @@ public record CompletedCourseResponse(
     Long id,
     String courseCode,
     String grade,
-    String semester
+    String semester,
+    String title,
+    Integer credits
 ) {}
