@@ -11,6 +11,7 @@ import com.example.server.dto.CourseDetailDTO;
 import com.example.server.dto.CourseSummaryDTO;
 import com.example.server.exception.CourseNotFoundException;
 import com.example.server.model.Course;
+import com.example.server.model.CourseType;
 import com.example.server.repository.CourseRepository;
 
 @Service
@@ -30,9 +31,9 @@ public class CourseCatalogService {
         this.requirementTreeMapper = requirementTreeMapper;
     }
 
-    public List<CourseSummaryDTO> searchCourses(String query) {
+    public List<CourseSummaryDTO> searchCourses(String query, CourseType type) {
         String normalizedQuery = normalize(query);
-        if (normalizedQuery.isEmpty()) {
+        if (normalizedQuery.isEmpty() && type == null) {
             return List.of();
         }
 
@@ -42,15 +43,23 @@ public class CourseCatalogService {
             Sort.by(Sort.Order.asc("courseCode"))
         );
 
-        return courseRepository
-            .findByCourseCodeContainingIgnoreCaseOrTitleContainingIgnoreCase(
-                normalizedQuery,
+        List<Course> results;
+        if (type != null) {
+            results = courseRepository.findByTypeAndQuery(
+                type,
                 normalizedQuery,
                 pageRequest
-            )
-            .stream()
-            .map(this::toSummaryDTO)
-            .toList();
+            );
+        } else {
+            results = courseRepository
+                .findByCourseCodeContainingIgnoreCaseOrTitleContainingIgnoreCase(
+                    normalizedQuery,
+                    normalizedQuery,
+                    pageRequest
+                );
+        }
+
+        return results.stream().map(this::toSummaryDTO).toList();
     }
 
     public CourseDetailDTO getCourseByCode(String courseCode) {
@@ -67,7 +76,8 @@ public class CourseCatalogService {
         return new CourseSummaryDTO(
             course.getCourseCode(),
             course.getTitle(),
-            course.getCredits()
+            course.getCredits(),
+            course.getCourseType()
         );
     }
 
@@ -78,7 +88,8 @@ public class CourseCatalogService {
             course.getCredits(),
             course.getDescription(),
             requirementTreeMapper.toResponse(course.getPrerequisite()),
-            requirementTreeMapper.toDescription(course.getPrerequisite())
+            requirementTreeMapper.toDescription(course.getPrerequisite()),
+            course.getCourseType()
         );
     }
 

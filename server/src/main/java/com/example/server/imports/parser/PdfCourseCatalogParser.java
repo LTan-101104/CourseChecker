@@ -65,7 +65,8 @@ public class PdfCourseCatalogParser {
                 block.title,
                 block.credits,
                 block.description,
-                prerequisite
+                prerequisite,
+                null
             );
             records.add(new ParsedCourseRecord(
                 courseDefinition,

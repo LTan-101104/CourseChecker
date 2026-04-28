@@ -2,6 +2,10 @@ package com.example.server.service;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,8 +17,10 @@ import com.example.server.exception.ConflictException;
 import com.example.server.exception.ForbiddenException;
 import com.example.server.exception.ResourceNotFoundException;
 import com.example.server.model.CompletedCourse;
+import com.example.server.model.Course;
 import com.example.server.model.User;
 import com.example.server.repository.CompletedCourseRepository;
+import com.example.server.repository.CourseRepository;
 
 @Service
 @Transactional
@@ -22,19 +28,31 @@ public class CompletedCourseService {
 
     private final AuthService authService;
     private final CompletedCourseRepository completedCourseRepository;
+    private final CourseRepository courseRepository;
 
     public CompletedCourseService(
         AuthService authService,
-        CompletedCourseRepository completedCourseRepository
+        CompletedCourseRepository completedCourseRepository,
+        CourseRepository courseRepository
     ) {
         this.authService = authService;
         this.completedCourseRepository = completedCourseRepository;
+        this.courseRepository = courseRepository;
     }
 
     @Transactional(readOnly = true)
     public List<CompletedCourseResponse> listForUser(Long userId) {
-        return completedCourseRepository.findByUserIdOrderByCourseCodeAsc(userId).stream()
-            .map(this::toResponse)
+        List<CompletedCourse> entries = completedCourseRepository.findByUserIdOrderByCourseCodeAsc(userId);
+
+        Set<String> codes = entries.stream()
+            .map(CompletedCourse::getCourseCode)
+            .collect(Collectors.toSet());
+
+        Map<String, Course> courseMap = courseRepository.findByCourseCodeIn(codes).stream()
+            .collect(Collectors.toMap(Course::getCourseCode, Function.identity()));
+
+        return entries.stream()
+            .map(cc -> toResponse(cc, courseMap.get(cc.getCourseCode())))
             .toList();
     }
 
@@ -53,7 +71,9 @@ public class CompletedCourseService {
             normalizeOptional(request.semester())
         );
 
-        return toResponse(completedCourseRepository.save(completedCourse));
+        CompletedCourse saved = completedCourseRepository.save(completedCourse);
+        Course course = courseRepository.findByCourseCode(saved.getCourseCode()).orElse(null);
+        return toResponse(saved, course);
     }
 
     public CompletedCourseResponse updateForUser(
@@ -73,7 +93,9 @@ public class CompletedCourseService {
         completedCourse.setGrade(normalizeOptional(request.grade()));
         completedCourse.setSemester(normalizeOptional(request.semester()));
 
-        return toResponse(completedCourseRepository.save(completedCourse));
+        CompletedCourse saved = completedCourseRepository.save(completedCourse);
+        Course course = courseRepository.findByCourseCode(saved.getCourseCode()).orElse(null);
+        return toResponse(saved, course);
     }
 
     public void deleteForUser(Long userId, Long completedCourseId) {
@@ -92,12 +114,14 @@ public class CompletedCourseService {
         return completedCourse;
     }
 
-    private CompletedCourseResponse toResponse(CompletedCourse completedCourse) {
+    private CompletedCourseResponse toResponse(CompletedCourse cc, Course course) {
         return new CompletedCourseResponse(
-            completedCourse.getId(),
-            completedCourse.getCourseCode(),
-            completedCourse.getGrade(),
-            completedCourse.getSemester()
+            cc.getId(),
+            cc.getCourseCode(),
+            cc.getGrade(),
+            cc.getSemester(),
+            course != null ? course.getTitle() : null,
+            course != null ? course.getCredits() : null
         );
     }
 

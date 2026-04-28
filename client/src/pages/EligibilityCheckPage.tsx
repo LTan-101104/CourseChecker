@@ -5,6 +5,7 @@ import {
   XCircle,
   CircleAlert,
   Circle,
+  ChevronsUpDown,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useCompletedCourses } from "../context/CompletedCoursesContext";
@@ -271,6 +272,7 @@ export function EligibilityCheckPage() {
                 onFocus={() => setShowDropdown(true)}
                 onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
               />
+              <ChevronsUpDown size={16} className="sel-input-icon" />
               {showDropdown && suggestions.length > 0 && (
                 <ul className="sel-dropdown">
                   {suggestions.map((c) => (

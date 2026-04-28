@@ -37,6 +37,8 @@ function mapCompletedCourse(dto: CompletedCourseDTO): CompletedCourse {
     courseCode: dto.courseCode,
     grade: dto.grade ?? "—",
     semester: dto.semester ?? "—",
+    title: dto.title,
+    credits: dto.credits,
   };
 }
 

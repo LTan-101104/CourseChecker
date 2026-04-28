@@ -1,4 +1,10 @@
-import { BrowserRouter, Routes, Route, Outlet, Navigate } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Outlet,
+  Navigate,
+} from "react-router-dom";
 import { Sidebar } from "./components/Sidebar";
 import { EligibilityCheckPage } from "./pages/EligibilityCheckPage";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -62,9 +68,9 @@ function App() {
       <Routes>
         <Route path="/auth" element={<PublicOnlyAuthRoute />} />
         <Route element={<AppLayout />}>
-          <Route path="/search" element={<CourseSearchPage />} />
-          <Route path="/course/:courseCode" element={<CourseDetailPage />} />
           <Route element={<RequireAuth />}>
+            <Route path="/search" element={<CourseSearchPage />} />
+            <Route path="/course/:courseCode" element={<CourseDetailPage />} />
             <Route index element={<DashboardPage />} />
             <Route path="/eligibility" element={<EligibilityCheckPage />} />
             <Route path="/transcript" element={<TranscriptPage />} />

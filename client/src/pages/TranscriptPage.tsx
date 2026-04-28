@@ -5,27 +5,25 @@ import { type CourseSummaryDTO } from "../api/courses";
 import { ApiError } from "../api/client";
 import { useCompletedCourses } from "../context/CompletedCoursesContext";
 import { useCourseSearch } from "../hooks/useCourseSearch";
-import { mockCourses } from "../data/mockCourses";
 import "./TranscriptPage.css";
 
 const PAGE_SIZE = 9;
 
-const mockCourseTitleMap = new Map(mockCourses.map((c) => [c.courseCode, c.title]));
-const mockCourseCreditsMap = new Map(
-  mockCourses.map((c) => [c.courseCode, c.credits]),
-);
-
 export function TranscriptPage() {
   const { user } = useAuth();
-  const { courses, loading, error, addCourse, removeCourse } = useCompletedCourses();
-  const [page, setPage] = useState(0);
+  const { courses, loading, error, addCourse, removeCourse } =
+    useCompletedCourses();
+  const [page, _setPage] = useState(0);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [showAddDropdown, setShowAddDropdown] = useState(false);
   const [addQuery, setAddQuery] = useState("");
   const [selectedAddCourse, setSelectedAddCourse] =
     useState<CourseSummaryDTO | null>(null);
-  const { results: addSearchResults, loading: isSearchingAddCourses, error: addSearchError } =
-    useCourseSearch(addQuery);
+  const {
+    results: addSearchResults,
+    loading: isSearchingAddCourses,
+    error: addSearchError,
+  } = useCourseSearch(addQuery);
 
   const addableCourses = useMemo(
     () =>
@@ -36,33 +34,15 @@ export function TranscriptPage() {
     [addSearchResults, courses],
   );
 
-  const selectedTitlesMap = useMemo(
-    () =>
-      new Map(
-        addSearchResults.map((course) => [course.courseCode, course.title]),
-      ),
-    [addSearchResults],
-  );
-  const selectedCreditsMap = useMemo(
-    () =>
-      new Map(
-        addSearchResults.map((course) => [course.courseCode, course.credits ?? undefined]),
-      ),
-    [addSearchResults],
-  );
-
   // Stats
   const totalCourses = courses.length;
-  const totalCredits = courses.reduce(
-    (sum, c) =>
-      sum +
-      (selectedCreditsMap.get(c.courseCode) ??
-        mockCourseCreditsMap.get(c.courseCode) ??
-        0),
-    0,
-  );
-  const csCourses = courses.filter((c) => c.courseCode.startsWith("COMPSCI")).length;
-  const mathCourses = courses.filter((c) => c.courseCode.startsWith("MATH")).length;
+  const totalCredits = courses.reduce((sum, c) => sum + (c.credits ?? 0), 0);
+  const csCourses = courses.filter((c) =>
+    c.courseCode.startsWith("COMPSCI"),
+  ).length;
+  const mathCourses = courses.filter((c) =>
+    c.courseCode.startsWith("MATH"),
+  ).length;
 
   // Pagination
   const totalPages = Math.ceil(courses.length / PAGE_SIZE);
@@ -127,7 +107,11 @@ export function TranscriptPage() {
 
       {/* Stat Cards */}
       <div className="stats-row">
-        <StatCard title="Total Courses" value={totalCourses} badge="CS & Math" />
+        <StatCard
+          title="Total Courses"
+          value={totalCourses}
+          badge="CS & Math"
+        />
         <StatCard title="Total Credits" value={totalCredits} badge="of 120" />
         <StatCard title="CS Courses" value={csCourses} badge="completed" />
         <StatCard title="Math Courses" value={mathCourses} badge="completed" />
@@ -181,7 +165,9 @@ export function TranscriptPage() {
       </div>
 
       {(error || submitError || addSearchError) && (
-        <p className="page-subtitle">{submitError ?? addSearchError ?? error}</p>
+        <p className="page-subtitle">
+          {submitError ?? addSearchError ?? error}
+        </p>
       )}
       {addQuery.trim() && isSearchingAddCourses && (
         <p className="page-subtitle">Searching courses...</p>
@@ -189,55 +175,49 @@ export function TranscriptPage() {
 
       {/* Table */}
       <div className="transcript-table-container">
-        <table className="transcript-table">
-          <thead>
-            <tr>
-              <th className="col-code">Course Code</th>
-              <th className="col-title">Course Title</th>
-              <th className="col-credits">Credits</th>
-              <th className="col-semester">Semester</th>
-              <th className="col-action">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pagedCourses.map((c) => (
-              <tr key={c.id}>
-                <td className="col-code cell-code">{c.courseCode}</td>
-                <td className="col-title">
-                  {selectedTitlesMap.get(c.courseCode) ??
-                    mockCourseTitleMap.get(c.courseCode) ??
-                    c.courseCode}
-                </td>
-                <td className="col-credits">
-                  {selectedCreditsMap.get(c.courseCode) ??
-                    mockCourseCreditsMap.get(c.courseCode) ??
-                    "—"}
-                </td>
-                <td className="col-semester cell-semester">{c.semester}</td>
-                <td className="col-action">
-                  <button
-                    className="delete-btn"
-                    onClick={() => {
-                      void handleDelete(c.id);
-                    }}
-                    aria-label={`Remove ${c.courseCode}`}
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {!loading && pagedCourses.length === 0 && (
+        <div className="transcript-table-scroll">
+          <table className="transcript-table">
+            <thead>
               <tr>
-                <td className="col-title" colSpan={5}>
-                  No transcript courses yet.
-                </td>
+                <th className="col-code">Course Code</th>
+                <th className="col-title">Course Title</th>
+                <th className="col-credits">Credits</th>
+                <th className="col-semester">Semester</th>
+                <th className="col-action">Action</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {pagedCourses.map((c) => (
+                <tr key={c.id}>
+                  <td className="col-code cell-code">{c.courseCode}</td>
+                  <td className="col-title">{c.title ?? c.courseCode}</td>
+                  <td className="col-credits">{c.credits ?? "—"}</td>
+                  <td className="col-semester cell-semester">{c.semester}</td>
+                  <td className="col-action">
+                    <button
+                      className="delete-btn"
+                      onClick={() => {
+                        void handleDelete(c.id);
+                      }}
+                      aria-label={`Remove ${c.courseCode}`}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {!loading && pagedCourses.length === 0 && (
+                <tr>
+                  <td className="col-title" colSpan={5}>
+                    No transcript courses yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
 
-        {/* Footer */}
+        {/* Footer
         <div className="table-footer">
           <span className="footer-text">
             Showing {pagedCourses.length} of {courses.length} courses
@@ -258,7 +238,7 @@ export function TranscriptPage() {
               Next
             </button>
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );

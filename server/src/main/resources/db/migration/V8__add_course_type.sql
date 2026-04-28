@@ -1,0 +1,2 @@
+ALTER TABLE course
+    ADD COLUMN course_type VARCHAR(50) NOT NULL DEFAULT 'OTHER';

@@ -93,14 +93,16 @@ This starts a lightweight PostgreSQL Alpine container with:
 
 ```bash
 cd server
-./mvnw spring-boot:run
+./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
 On first startup, Spring Boot will:
 1. Run **Flyway migrations** to create the schema
-2. Run the **DatabaseSeeder** to populate mock course data
+2. Run the **DatabaseSeeder** to inject mock courses, users, and transcript data
 
 The API is available at `http://localhost:8080`.
+
+> **Note:** The `dev` profile is required to activate the seeder. Without it, migrations still run but no seed data is inserted. See [Seed Data System](#seed-data-system) below.
 
 ### 3. Populate Course Data from UMass PDF Imports
 
@@ -243,13 +245,49 @@ docker compose down -v && rm -rf docker/postgres-data
 
 ## Seed Data System
 
+The seeder runs automatically on startup when the `dev` Spring profile is active (`@Profile("dev")`).
+
+### Activating the Seeder
+
+```bash
+# Recommended: pass the profile via Maven
+cd server && ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
+
+# Alternative: environment variable
+export SPRING_PROFILES_ACTIVE=dev
+cd server && ./mvnw spring-boot:run
+```
+
+The seeder is **idempotent** — safe to re-run; it skips rows that already exist.
+
+### What Gets Seeded
+
+**Users** (password for both: `password123!`):
+
+| studentId | Name | Email |
+|-----------|------|-------|
+| `student-001` | John Doe | jdoe@umass.edu |
+| `student-002` | Jane Smith | jsmith@umass.edu |
+
+**Transcripts** (completed courses per user):
+
+| studentId | Completed |
+|-----------|-----------|
+| `student-001` | COMPSCI 121, COMPSCI 187, MATH 131 — eligible for COMPSCI 220 |
+| `student-002` | COMPSCI 121, MATH 132 — missing COMPSCI 187, ineligible for COMPSCI 220 |
+
+**Courses**:
+Courses catalog information are also seeded under dev profile.
+
+### Architecture
+
 The seed system is designed for **data source swappability**:
 
 - `CourseDataProvider` (interface) — defines the data contract
 - `MockCourseDataProvider` — current implementation with hardcoded test data
 - `DatabaseSeeder` — handles DB insertion (decoupled from data source)
 
-To replace mock data with a web crawler, create a new `CourseDataProvider` implementation and annotate it with `@Primary`.
+To swap the data source, create a new `CourseDataProvider` implementation annotated with `@Component` and `@Primary`. The `DatabaseSeeder` picks it up via dependency injection with no other changes required.
 
 ## Contributing
 

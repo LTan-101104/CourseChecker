@@ -37,6 +37,8 @@ export interface CompletedCourse {
   courseCode: string;
   grade: string;
   semester: string;
+  title: string | null;
+  credits: number | null;
 }
 
 export interface Transcript {
