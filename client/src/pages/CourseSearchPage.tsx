@@ -1,30 +1,33 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Bell } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useCourseSearch } from "../hooks/useCourseSearch";
 import { CourseCard } from "../components/CourseCard";
+import type { CourseType } from "../api/courses";
 import "./CourseSearchPage.css";
 
-type Filter = "All" | "COMPSCI" | "MATH";
+type Filter = "All" | CourseType;
+
+const FILTER_LABELS: Record<Filter, string> = {
+  All: "All Courses",
+  CS: "COMPSCI",
+  CICS: "CICS",
+  MATH: "MATH",
+  STATS: "STATISTICS",
+  OTHER: "Other",
+};
+
+const FILTERS: Filter[] = ["All", "CS", "CICS", "MATH", "STATS"];
 
 export function CourseSearchPage() {
   const { user } = useAuth();
   const [activeFilter, setActiveFilter] = useState<Filter>("All");
   const [searchTerm, setSearchTerm] = useState("");
-  const { results, loading, error } = useCourseSearch(searchTerm);
 
-  const filters: Filter[] = ["All", "COMPSCI", "MATH"];
+  const activeType = activeFilter === "All" ? undefined : activeFilter;
+  const { results, loading, error } = useCourseSearch(searchTerm, activeType);
 
-  const filteredCourses = useMemo(() => {
-    let currentResults = results;
-
-    if (activeFilter !== "All") {
-      currentResults = currentResults.filter((c) =>
-        c.courseCode.startsWith(activeFilter),
-      );
-    }
-    return currentResults;
-  }, [activeFilter, results]);
+  const hasQuery = !!searchTerm.trim() || activeFilter !== "All";
 
   return (
     <div className="search-page">
@@ -60,35 +63,33 @@ export function CourseSearchPage() {
       {/* Filters */}
       <div className="filters-row">
         <span className="filter-label">Filters:</span>
-        {filters.map((f) => (
+        {FILTERS.map((f) => (
           <button
             key={f}
             className={`filter-badge ${activeFilter === f ? "active" : ""}`}
             onClick={() => setActiveFilter(f)}
           >
-            {f === "All" ? "All Courses" : f}
+            {FILTER_LABELS[f]}
           </button>
         ))}
-        <span className="result-count">
-          {filteredCourses.length} courses found
-        </span>
+        <span className="result-count">{results.length} courses found</span>
       </div>
 
       {/* Results Grid */}
       <div className="results-grid">
-        {!searchTerm.trim() && (
+        {!hasQuery && (
           <p className="result-empty">Type to search courses in the database.</p>
         )}
-        {searchTerm.trim() && loading && (
+        {hasQuery && loading && (
           <p className="result-empty">Searching courses...</p>
         )}
-        {searchTerm.trim() && !loading && error && (
+        {hasQuery && !loading && error && (
           <p className="result-empty">{error}</p>
         )}
-        {searchTerm.trim() && !loading && !error && filteredCourses.length === 0 && (
+        {hasQuery && !loading && !error && results.length === 0 && (
           <p className="result-empty">No courses found.</p>
         )}
-        {filteredCourses.map((course) => (
+        {results.map((course) => (
           <CourseCard key={course.courseCode} course={course} />
         ))}
       </div>

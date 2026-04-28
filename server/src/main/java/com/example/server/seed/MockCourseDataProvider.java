@@ -4,6 +4,8 @@ import java.util.List;
 
 import org.springframework.stereotype.Component;
 
+import com.example.server.model.CourseType;
+
 /**
  * Hardcoded mock data for development and testing.
  *
@@ -65,28 +67,32 @@ public class MockCourseDataProvider implements CourseDataProvider {
                         "Introduction to Problem Solving with Computers",
                         4,
                         "An introductory course in computer science for non-CS majors.",
-                        null),
+                        null,
+                        CourseType.CS),
 
                 new CourseDefinition(
                         "MATH 131",
                         "Calculus I",
                         4,
                         "First course in calculus covering limits, derivatives, and integrals.",
-                        null),
+                        null,
+                        CourseType.MATH),
 
                 new CourseDefinition(
                         "MATH 132",
                         "Calculus II",
                         4,
                         "Second course in calculus covering integration techniques and series.",
-                        RequirementDefinition.course("MATH 131")),
+                        RequirementDefinition.course("MATH 131"),
+                        CourseType.MATH),
 
                 new CourseDefinition(
                         "STATISTICS 315",
                         "Statistics I",
                         3,
                         "Introduction to basic statistics, expected value, variance, distribution models.",
-                        null),
+                        null,
+                        CourseType.STATS),
 
                 // ── Intermediate courses ────────────────────────────
 
@@ -95,7 +101,8 @@ public class MockCourseDataProvider implements CourseDataProvider {
                         "Programming with Data Structures",
                         4,
                         "Use, design, and analysis of data structures.",
-                        RequirementDefinition.course("COMPSCI 121")),
+                        RequirementDefinition.course("COMPSCI 121"),
+                        CourseType.CS),
 
                 new CourseDefinition(
                         "CICS 210",
@@ -108,7 +115,8 @@ public class MockCourseDataProvider implements CourseDataProvider {
                                 + "covered include linear and non-linear structures, recursive structures and algorithms, "
                                 + "traversal algorithms, binary search trees, balanced trees, priority queues, union-find, "
                                 + "hash tables, bloom filters, and graphs. Also covers run time analysis and Big-O notation.",
-                        RequirementDefinition.course("COMPSCI 121")),
+                        RequirementDefinition.course("COMPSCI 121"),
+                        CourseType.CICS),
 
                 new CourseDefinition(
                         "COMPSCI 198C",
@@ -121,7 +129,8 @@ public class MockCourseDataProvider implements CourseDataProvider {
                                 + "common library calls (such as formatted input/output); basic pointer manipulation "
                                 + "using linked lists; and introduction to using standard tools (gcc and make). "
                                 + "A required prerequisite for COMPSCI 230, effective Fall 2023.",
-                        RequirementDefinition.course("COMPSCI 121")),
+                        RequirementDefinition.course("COMPSCI 121"),
+                        CourseType.CS),
 
                 // ── Upper-level courses ─────────────────────────────
 
@@ -134,7 +143,8 @@ public class MockCourseDataProvider implements CourseDataProvider {
                                 + "and object-oriented approaches, testing and program verification, code refactoring, "
                                 + "interfacing with libraries. There will be significant programming and mid-term and "
                                 + "final examinations.",
-                        RequirementDefinition.course("COMPSCI 187")),
+                        RequirementDefinition.course("COMPSCI 187"),
+                        CourseType.CS),
 
                 // COMPSCI 230 requires: COMPSCI 187 AND COMPSCI 198C
                 new CourseDefinition(
@@ -148,7 +158,8 @@ public class MockCourseDataProvider implements CourseDataProvider {
                                 + "process, and synchronization.",
                         RequirementDefinition.and(
                                 RequirementDefinition.course("COMPSCI 187"),
-                                RequirementDefinition.course("COMPSCI 198C"))),
+                                RequirementDefinition.course("COMPSCI 198C")),
+                        CourseType.CS),
 
                 // COMPSCI 240 requires: COMPSCI 187 AND MATH 132
                 new CourseDefinition(
@@ -163,7 +174,8 @@ public class MockCourseDataProvider implements CourseDataProvider {
                                 + "Statistical topics such as estimation of parameters and linear regression, as time permits.",
                         RequirementDefinition.and(
                                 RequirementDefinition.course("COMPSCI 187"),
-                                RequirementDefinition.course("MATH 132"))),
+                                RequirementDefinition.course("MATH 132")),
+                        CourseType.CS),
 
                 // COMPSCI 250 requires: COMPSCI 187 AND MATH 132
                 new CourseDefinition(
@@ -178,7 +190,8 @@ public class MockCourseDataProvider implements CourseDataProvider {
                                 + "Problem sets, 2 midterm exams, timed final.",
                         RequirementDefinition.and(
                                 RequirementDefinition.course("COMPSCI 187"),
-                                RequirementDefinition.course("MATH 132"))),
+                                RequirementDefinition.course("MATH 132")),
+                        CourseType.CS),
 
                 // COMPSCI 311 requires: COMPSCI 187 AND COMPSCI 250
                 // (PDF also lists MATH 455 as alternative to COMPSCI 250, omitted — not in
@@ -195,7 +208,8 @@ public class MockCourseDataProvider implements CourseDataProvider {
                                 + "a CS Elective for the CS Major (BA).",
                         RequirementDefinition.and(
                                 RequirementDefinition.course("COMPSCI 187"),
-                                RequirementDefinition.course("COMPSCI 250"))),
+                                RequirementDefinition.course("COMPSCI 250")),
+                        CourseType.CS),
 
                 new CourseDefinition(
                         "COMPSCI 320",
@@ -207,7 +221,8 @@ public class MockCourseDataProvider implements CourseDataProvider {
                                 + "the software life cycle. Topics include requirements analysis, specification, design, "
                                 + "abstraction, programming style, testing, maintenance, communication, teamwork, and "
                                 + "software project management.",
-                        RequirementDefinition.course("COMPSCI 220")),
+                        RequirementDefinition.course("COMPSCI 220"),
+                        CourseType.CS),
 
                 new CourseDefinition(
                         "COMPSCI 326",
@@ -218,7 +233,8 @@ public class MockCourseDataProvider implements CourseDataProvider {
                                 + "as well as server-side concepts including AJAX, JavaScript libraries, and web security. "
                                 + "Students will construct a substantial dynamic web application based on the concepts "
                                 + "and techniques presented during lectures and in readings.",
-                        RequirementDefinition.course("COMPSCI 220")),
+                        RequirementDefinition.course("COMPSCI 220"),
+                        CourseType.CS),
 
                 // COMPSCI 345 requires: CICS 210 OR COMPSCI 187
                 new CourseDefinition(
@@ -233,7 +249,8 @@ public class MockCourseDataProvider implements CourseDataProvider {
                                 + "schema refinement, implementation of basic transactions, and database security.",
                         RequirementDefinition.or(
                                 RequirementDefinition.course("CICS 210"),
-                                RequirementDefinition.course("COMPSCI 187"))),
+                                RequirementDefinition.course("COMPSCI 187")),
+                        CourseType.CS),
 
                 // COMPSCI 445 requires: (COMPSCI 220 OR COMPSCI 230) AND COMPSCI 311 AND
                 // COMPSCI 345
@@ -253,7 +270,8 @@ public class MockCourseDataProvider implements CourseDataProvider {
                                         RequirementDefinition.course("COMPSCI 220"),
                                         RequirementDefinition.course("COMPSCI 230")),
                                 RequirementDefinition.course("COMPSCI 311"),
-                                RequirementDefinition.course("COMPSCI 345"))),
+                                RequirementDefinition.course("COMPSCI 345")),
+                        CourseType.CS),
 
                 new CourseDefinition(
                         "COMPSCI 377",
@@ -265,7 +283,8 @@ public class MockCourseDataProvider implements CourseDataProvider {
                                 + "process management (processes, threads, CPU scheduling, synchronization, and deadlock), "
                                 + "memory management (segmentation, paging, swapping), file systems, and operating system "
                                 + "support for distributed systems. Programming projects in C.",
-                        RequirementDefinition.course("COMPSCI 230")),
+                        RequirementDefinition.course("COMPSCI 230"),
+                        CourseType.CS),
 
                 // COMPSCI 383 requires: (CICS 210 OR COMPSCI 187) AND (COMPSCI 240 OR
                 // STATISTICS 315)
@@ -284,7 +303,8 @@ public class MockCourseDataProvider implements CourseDataProvider {
                                         RequirementDefinition.course("COMPSCI 187")),
                                 RequirementDefinition.or(
                                         RequirementDefinition.course("COMPSCI 240"),
-                                        RequirementDefinition.course("STATISTICS 315")))),
+                                        RequirementDefinition.course("STATISTICS 315"))),
+                        CourseType.CS),
 
                 // COMPSCI 453 requires: COMPSCI 230 OR COMPSCI 377
                 new CourseDefinition(
@@ -299,7 +319,8 @@ public class MockCourseDataProvider implements CourseDataProvider {
                                 + "network security, and network management.",
                         RequirementDefinition.or(
                                 RequirementDefinition.course("COMPSCI 230"),
-                                RequirementDefinition.course("COMPSCI 377"))),
+                                RequirementDefinition.course("COMPSCI 377")),
+                        CourseType.CS),
 
                 // COMPSCI 485 requires: COMPSCI 220 AND COMPSCI 240
                 // (PDF also lists LINGUIST 429B as alternative, omitted — not in catalog)
@@ -314,7 +335,8 @@ public class MockCourseDataProvider implements CourseDataProvider {
                                 + "a series of hands-on projects to use, implement, experiment with, and improve NLP tools.",
                         RequirementDefinition.and(
                                 RequirementDefinition.course("COMPSCI 220"),
-                                RequirementDefinition.course("COMPSCI 240"))),
+                                RequirementDefinition.course("COMPSCI 240")),
+                        CourseType.CS),
 
                 // COMPSCI 514 requires: (COMPSCI 240 OR STATISTICS 315) AND COMPSCI 311
                 new CourseDefinition(
@@ -332,7 +354,8 @@ public class MockCourseDataProvider implements CourseDataProvider {
                                 RequirementDefinition.or(
                                         RequirementDefinition.course("COMPSCI 240"),
                                         RequirementDefinition.course("STATISTICS 315")),
-                                RequirementDefinition.course("COMPSCI 311"))),
+                                RequirementDefinition.course("COMPSCI 311")),
+                        CourseType.CS),
 
                 // COMPSCI 520 requires: COMPSCI 320 OR (COMPSCI 220 AND COMPSCI 326)
                 new CourseDefinition(
@@ -347,7 +370,8 @@ public class MockCourseDataProvider implements CourseDataProvider {
                                 RequirementDefinition.course("COMPSCI 320"),
                                 RequirementDefinition.and(
                                         RequirementDefinition.course("COMPSCI 220"),
-                                        RequirementDefinition.course("COMPSCI 326")))),
+                                        RequirementDefinition.course("COMPSCI 326"))),
+                        CourseType.CS),
 
                 // COMPSCI 532 requires: COMPSCI 377 AND COMPSCI 445
                 new CourseDefinition(
@@ -362,7 +386,8 @@ public class MockCourseDataProvider implements CourseDataProvider {
                                 + "data science platforms including MapReduce-Hadoop, Spark, and more.",
                         RequirementDefinition.and(
                                 RequirementDefinition.course("COMPSCI 377"),
-                                RequirementDefinition.course("COMPSCI 445"))));
+                                RequirementDefinition.course("COMPSCI 445")),
+                        CourseType.CS));
     }
 
     @Override

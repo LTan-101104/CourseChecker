@@ -1,17 +1,17 @@
 import { useEffect, useState } from "react";
-import { searchCourses, type CourseSummaryDTO } from "../api/courses";
+import { searchCourses, type CourseSummaryDTO, type CourseType } from "../api/courses";
 import { ApiError } from "../api/client";
 
 const SEARCH_DEBOUNCE_MS = 300;
 
-export function useCourseSearch(query: string) {
+export function useCourseSearch(query: string, type?: CourseType) {
   const [results, setResults] = useState<CourseSummaryDTO[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const normalized = query.trim();
-    if (!normalized) {
+    if (!normalized && !type) {
       setResults([]);
       setError(null);
       setLoading(false);
@@ -23,7 +23,7 @@ export function useCourseSearch(query: string) {
       void (async () => {
         setLoading(true);
         try {
-          const data = await searchCourses(normalized);
+          const data = await searchCourses(normalized, type);
           if (!isCancelled) {
             setResults(data);
             setError(null);
@@ -50,7 +50,7 @@ export function useCourseSearch(query: string) {
       isCancelled = true;
       clearTimeout(timeoutId);
     };
-  }, [query]);
+  }, [query, type]);
 
   return { results, loading, error };
 }

@@ -1,9 +1,12 @@
 import { apiRequest } from "./client";
 
+export type CourseType = "CS" | "CICS" | "MATH" | "STATS" | "OTHER";
+
 export interface CourseSummaryDTO {
   courseCode: string;
   title: string;
   credits: number | null;
+  courseType: CourseType;
 }
 
 export interface RequirementNodeDTO {
@@ -19,15 +22,22 @@ export interface CourseDetailDTO {
   description: string | null;
   prerequisite: RequirementNodeDTO | null;
   prerequisiteDescription: string | null;
+  courseType: CourseType;
 }
 
-export async function searchCourses(query: string): Promise<CourseSummaryDTO[]> {
+export async function searchCourses(
+  query: string,
+  type?: CourseType,
+): Promise<CourseSummaryDTO[]> {
   const normalized = query.trim();
-  if (!normalized) {
+  if (!normalized && !type) {
     return [];
   }
 
   const params = new URLSearchParams({ q: normalized });
+  if (type) {
+    params.set("type", type);
+  }
   return apiRequest<CourseSummaryDTO[]>(`/api/v1/courses/search?${params.toString()}`, {
     method: "GET",
   });

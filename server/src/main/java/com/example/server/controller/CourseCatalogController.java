@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.server.dto.CourseDetailDTO;
 import com.example.server.dto.CourseSummaryDTO;
+import com.example.server.model.CourseType;
 import com.example.server.service.CourseCatalogService;
 
 @RestController
@@ -25,8 +26,11 @@ public class CourseCatalogController {
     }
 
     @GetMapping("/search")
-    public List<CourseSummaryDTO> searchCourses(@RequestParam("q") String query) {
-        return courseCatalogService.searchCourses(query);
+    public List<CourseSummaryDTO> searchCourses(
+        @RequestParam("q") String query,
+        @RequestParam(value = "type", required = false) CourseType type
+    ) {
+        return courseCatalogService.searchCourses(query, type);
     }
 
     @GetMapping("/{courseCode}")
