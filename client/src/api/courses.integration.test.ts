@@ -4,6 +4,7 @@ import { searchCourses } from "./courses";
 describe("searchCourses", () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it("does not call the API for an empty search without a type filter", async () => {

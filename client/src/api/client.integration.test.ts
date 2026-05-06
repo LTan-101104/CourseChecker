@@ -4,6 +4,7 @@ import { apiRequest, ApiError, setAuthTokenProvider } from "./client";
 describe("apiRequest", () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
     setAuthTokenProvider(null);
   });
 

@@ -13,7 +13,7 @@ export function TranscriptPage() {
   const { user } = useAuth();
   const { courses, loading, error, addCourse, removeCourse } =
     useCompletedCourses();
-  const [page] = useState(0);
+  const page = 0;
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [showAddDropdown, setShowAddDropdown] = useState(false);
   const [addQuery, setAddQuery] = useState("");

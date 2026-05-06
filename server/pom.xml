@@ -29,6 +29,7 @@
 	<properties>
 		<java.version>17</java.version>
 		<jjwt.version>0.12.7</jjwt.version>
+		<surefire.excludedGroups>stress</surefire.excludedGroups>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -165,9 +166,19 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
 					<argLine>${argLine} -XX:+EnableDynamicAgentLoading</argLine>
+					<excludedGroups>${surefire.excludedGroups}</excludedGroups>
 				</configuration>
 			</plugin>
 		</plugins>
 	</build>
+
+	<profiles>
+		<profile>
+			<id>stress-tests</id>
+			<properties>
+				<surefire.excludedGroups></surefire.excludedGroups>
+			</properties>
+		</profile>
+	</profiles>
 
 </project>

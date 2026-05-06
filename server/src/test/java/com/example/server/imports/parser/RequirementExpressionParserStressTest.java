@@ -11,12 +11,15 @@ import com.example.server.seed.RequirementDefinition;
 @Tag("stress")
 class RequirementExpressionParserStressTest {
 
+    private static final int ITERATIONS =
+        Integer.getInteger("requirementExpressionParserStressIterations", 1_000);
+
     private final RequirementExpressionParser parser = new RequirementExpressionParser();
 
     @Test
     @Timeout(5)
     void repeatedlyParsesNestedCourseOnlyExpressions() {
-        for (int i = 0; i < 1_000; i++) {
+        for (int i = 0; i < ITERATIONS; i++) {
             String expression = "Prerequisites: COMPSCI " + (100 + i % 400)
                 + " AND (MATH 131 OR 132) AND (COMPSCI 220 OR 230)";
 
