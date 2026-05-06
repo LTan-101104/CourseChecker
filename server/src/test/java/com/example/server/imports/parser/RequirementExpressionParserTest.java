@@ -64,4 +64,31 @@ class RequirementExpressionParserTest {
         assertThat(result.requirement()).isNull();
         assertThat(result.message()).contains("supported course-only expression");
     }
+
+    @Test
+    void parseDetailedTreatsBlankTextAsNotPresent() {
+        RequirementExpressionParser.ParseResult result = parser.parseDetailed("   ");
+
+        assertThat(result.outcome()).isEqualTo(PrerequisiteParseOutcome.NOT_PRESENT);
+        assertThat(result.requirement()).isNull();
+        assertThat(result.normalizedExpression()).isNull();
+    }
+
+    @Test
+    void parseDetailedFlagsUnbalancedParenthesesAsMalformed() {
+        RequirementExpressionParser.ParseResult result = parser.parseDetailed("COMPSCI 187 AND (MATH 131 OR");
+
+        assertThat(result.outcome()).isEqualTo(PrerequisiteParseOutcome.MALFORMED);
+        assertThat(result.requirement()).isNull();
+        assertThat(result.message()).contains("Malformed prerequisite expression");
+    }
+
+    @Test
+    void parseExpandsAmpersandCourseShorthand() {
+        RequirementDefinition root = parser.parse("Prerequisites: COMPSCI 230 & 240");
+
+        assertThat(root.getType()).isEqualTo(RequirementDefinition.Type.AND);
+        assertThat(root.getChildren()).extracting(RequirementDefinition::getCourseCode)
+            .containsExactly("COMPSCI 230", "COMPSCI 240");
+    }
 }

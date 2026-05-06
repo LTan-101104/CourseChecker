@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 
+import com.example.server.model.CourseType;
+
 class SeedDataStructuresTest {
 
     @Test
@@ -33,12 +35,20 @@ class SeedDataStructuresTest {
 
     @Test
     void courseDefinitionStoresFields() {
-        CourseDefinition definition = new CourseDefinition("COMPSCI 121", "Intro", 4, "desc", null);
+        CourseDefinition definition = new CourseDefinition(
+            "COMPSCI 121",
+            "Intro",
+            4,
+            "desc",
+            null,
+            CourseType.CS
+        );
 
         assertThat(definition.getCourseCode()).isEqualTo("COMPSCI 121");
         assertThat(definition.getTitle()).isEqualTo("Intro");
         assertThat(definition.getCredits()).isEqualTo(4);
         assertThat(definition.getDescription()).isEqualTo("desc");
         assertThat(definition.getPrerequisite()).isNull();
+        assertThat(definition.getCourseType()).isEqualTo(CourseType.CS);
     }
 }

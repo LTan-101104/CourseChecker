@@ -16,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import com.example.server.model.CourseType;
 import com.example.server.model.User;
 import com.example.server.repository.CompletedCourseRepository;
 import com.example.server.repository.UserRepository;
@@ -45,7 +46,7 @@ class DatabaseSeederTest {
     @Test
     void runSeedsCoursesUsersAndCompletedCourses() {
         when(courseDataProvider.getCourseDefinitions()).thenReturn(List.of(
-            new CourseDefinition("COMPSCI 121", "Intro", 4, "desc", null)
+            new CourseDefinition("COMPSCI 121", "Intro", 4, "desc", null, CourseType.CS)
         ));
         when(courseImportService.importCourses(any())).thenReturn(List.of(
             new CourseImportService.CourseImportResult(
