@@ -8,11 +8,12 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest run --exclude \"**/*.stress.test.*\"",
+    "test": "vitest run --exclude \"**/*.stress.test.*\" --exclude \"**/*.e2e.test.*\"",
     "test:unit": "vitest run unit.test",
     "test:integration": "vitest run integration.test",
     "test:stress": "vitest run stress.test",
-    "test:watch": "vitest --exclude \"**/*.stress.test.*\""
+    "test:e2e": "vitest run e2e.test",
+    "test:watch": "vitest --exclude \"**/*.stress.test.*\" --exclude \"**/*.e2e.test.*\""
   },
   "dependencies": {
     "lucide-react": "^1.7.0",

@@ -289,6 +289,94 @@ The seed system is designed for **data source swappability**:
 
 To swap the data source, create a new `CourseDataProvider` implementation annotated with `@Component` and `@Primary`. The `DatabaseSeeder` picks it up via dependency injection with no other changes required.
 
+## Testing
+
+Both backend and frontend have separate routine and stress-test entry points. Routine commands exclude stress tests; stress suites are opt-in.
+
+### Backend (Maven / JUnit)
+
+```bash
+cd server
+
+# Routine tests (excludes @Tag("stress"))
+./mvnw test
+
+# Stress tests only (activates the `stress-tests` Maven profile)
+./mvnw test -Pstress-tests
+```
+
+### Frontend (Vitest)
+
+```bash
+cd client
+corepack yarn install   # first time only
+
+# Routine tests (unit + integration; excludes *.stress.test.* and *.e2e.test.*)
+corepack yarn test
+
+# Targeted suites
+corepack yarn test:unit
+corepack yarn test:integration
+
+# Stress tests only
+corepack yarn test:stress
+
+# Watch mode (routine tests, re-runs on change)
+corepack yarn test:watch
+```
+
+### Cross-Stack (Frontend ↔ Backend)
+
+The `*.e2e.test.*` suite under `client/src/e2e/` exercises the real frontend API client against a **live backend**. Bring the stack up first with the `dev` profile so seed data is present:
+
+```bash
+docker compose up -d
+cd server && ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
+```
+
+Then in another terminal:
+
+```bash
+cd client
+corepack yarn test:e2e
+```
+
+These tests are excluded from `yarn test` and `yarn test:watch` because they require the backend to be running.
+
+### Load Testing (Concurrent User Simulation)
+
+`loadtest/run-load-test.mjs` is a dependency-free Node script that simulates concurrent users hitting the backend. Each virtual user logs in once, then loops `search "COMPSCI" → fetch a random returned course detail` until the duration expires. It reports throughput, error rate, and p50/p95/p99 latency per endpoint.
+
+Requires the backend running with the `dev` profile (same setup as the cross-stack tests). Node 18+ is needed for the global `fetch`.
+
+```bash
+# Defaults: 10 virtual users, 20s, http://localhost:8080
+node loadtest/run-load-test.mjs
+
+# Custom load
+node loadtest/run-load-test.mjs --users 25 --duration 60
+node loadtest/run-load-test.mjs --base-url http://localhost:8080 --users 50 --duration 30
+```
+
+Sample output:
+
+```
+Load Test Summary
+=================
+Duration:       15.01 s
+Virtual users:  10
+Total requests: 31680
+Throughput:     2111.1 req/s
+Errors:         0 (0.00%)
+
+Per-endpoint latency (ms):
+  POST /api/v1/auth/login         p50= 190 p95= 201 p99= 201 n=   10 errors=0
+  GET  /api/v1/courses/search     p50=   6 p95=   9 p99=  14 n=15835 errors=0
+  GET  /api/v1/courses/:code      p50=   2 p95=   4 p99=   7 n=15835 errors=0
+```
+
+Note that this is an I/O-concurrency simulation on a single Node process — fine for catching latency cliffs and DB-pool contention on a developer laptop. For higher-fidelity load profiles (ramp-up curves, multi-process generation, distributed runs), graduate to a dedicated tool like [k6](https://k6.io/) or Gatling.
+
 ## Contributing
 
 Use **Conventional Commits** for all commit messages:
