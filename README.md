@@ -289,6 +289,60 @@ The seed system is designed for **data source swappability**:
 
 To swap the data source, create a new `CourseDataProvider` implementation annotated with `@Component` and `@Primary`. The `DatabaseSeeder` picks it up via dependency injection with no other changes required.
 
+## Testing
+
+Both backend and frontend have separate routine and stress-test entry points. Routine commands exclude stress tests; stress suites are opt-in.
+
+### Backend (Maven / JUnit)
+
+```bash
+cd server
+
+# Routine tests (excludes @Tag("stress"))
+./mvnw test
+
+# Stress tests only (activates the `stress-tests` Maven profile)
+./mvnw test -Pstress-tests
+```
+
+### Frontend (Vitest)
+
+```bash
+cd client
+corepack yarn install   # first time only
+
+# Routine tests (unit + integration; excludes *.stress.test.* and *.e2e.test.*)
+corepack yarn test
+
+# Targeted suites
+corepack yarn test:unit
+corepack yarn test:integration
+
+# Stress tests only
+corepack yarn test:stress
+
+# Watch mode (routine tests, re-runs on change)
+corepack yarn test:watch
+```
+
+### Cross-Stack (Frontend ↔ Backend)
+
+The `*.e2e.test.*` suite under `client/src/e2e/` exercises the real frontend API client against a **live backend**. Bring the stack up first with the `dev` profile so seed data is present:
+
+```bash
+docker compose up -d
+cd server && ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
+```
+
+Then in another terminal:
+
+```bash
+cd client
+corepack yarn test:e2e
+```
+
+These tests are excluded from `yarn test` and `yarn test:watch` because they require the backend to be running.
+
 ## Contributing
 
 Use **Conventional Commits** for all commit messages:
