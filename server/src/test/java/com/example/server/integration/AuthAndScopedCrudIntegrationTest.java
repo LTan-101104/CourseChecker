@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -21,6 +22,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import com.example.server.repository.CompletedCourseRepository;
+import com.example.server.model.Course;
+import com.example.server.repository.CourseRepository;
 import com.example.server.repository.UserRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -40,11 +43,15 @@ class AuthAndScopedCrudIntegrationTest {
     private CompletedCourseRepository completedCourseRepository;
 
     @Autowired
+    private CourseRepository courseRepository;
+
+    @Autowired
     private UserRepository userRepository;
 
     @BeforeEach
     void cleanDatabase() {
         completedCourseRepository.deleteAll();
+        courseRepository.deleteAll();
         userRepository.deleteAll();
     }
 
@@ -129,6 +136,41 @@ class AuthAndScopedCrudIntegrationTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$[0].courseCode").value("MATH 132"))
             .andExpect(jsonPath("$[0].grade").value("A"));
+    }
+
+    @Test
+    @Tag("integration")
+    void completedCourseEndpointsIncludeCatalogMetadataWhenCourseExists() throws Exception {
+        courseRepository.save(new Course(
+            "COMPSCI 187",
+            "Programming with Data Structures",
+            4,
+            "Use, design, and analysis of data structures."
+        ));
+        String token = register("A10003", "Carol", "carol@example.com", "password789")
+            .get("token")
+            .asText();
+
+        mockMvc.perform(
+            post("/api/v1/users/me/completed-courses")
+                .header(AUTHORIZATION, bearer(token))
+                .contentType(APPLICATION_JSON)
+                .content(json(Map.of(
+                    "courseCode", "compsci 187",
+                    "grade", "A",
+                    "semester", "Fall 2025"
+                )))
+        )
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.courseCode").value("COMPSCI 187"))
+            .andExpect(jsonPath("$.title").value("Programming with Data Structures"))
+            .andExpect(jsonPath("$.credits").value(4));
+
+        mockMvc.perform(get("/api/v1/users/me/completed-courses").header(AUTHORIZATION, bearer(token)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].courseCode").value("COMPSCI 187"))
+            .andExpect(jsonPath("$[0].title").value("Programming with Data Structures"))
+            .andExpect(jsonPath("$[0].credits").value(4));
     }
 
     private JsonNode register(

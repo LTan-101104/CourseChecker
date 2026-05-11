@@ -55,6 +55,45 @@ class PdfCourseCatalogParserTest {
     }
 
     @Test
+    void parseMarksCoursesWithoutPrerequisitesAsNotPresent() {
+        String text = """
+            Introductory programming course. 4 credits.
+            Faculty NameINSTRUCTOR(S):
+            COMPSCI 121  Introduction to Problem Solving with Computers
+            """;
+
+        PdfParseResult result = parser.parse(text);
+
+        assertThat(result.warnings()).isEmpty();
+        assertThat(result.records()).singleElement().satisfies(record -> {
+            assertThat(record.prerequisiteParseOutcome()).isEqualTo(PrerequisiteParseOutcome.NOT_PRESENT);
+            assertThat(record.prerequisiteText()).isNull();
+            assertThat(record.courseDefinition().getPrerequisite()).isNull();
+        });
+    }
+
+    @Test
+    void parseRecordsStructuredWarningsForMalformedPrerequisites() {
+        String text = """
+            Broken prerequisite sentence. Prerequisite: COMPSCI 187 AND (. 4 credits.
+            Faculty NameINSTRUCTOR(S):
+            COMPSCI 220  Programming Methodology
+            """;
+
+        PdfParseResult result = parser.parse(text);
+
+        assertThat(result.records()).hasSize(1);
+        ParsedCourseRecord record = result.records().get(0);
+        assertThat(record.prerequisiteParseOutcome()).isEqualTo(PrerequisiteParseOutcome.MALFORMED);
+        assertThat(record.courseDefinition().getPrerequisite()).isNull();
+        assertThat(result.warnings()).singleElement().satisfies(warning -> {
+            assertThat(warning.code()).isEqualTo("PREREQ_MALFORMED");
+            assertThat(warning.courseCode()).isEqualTo("COMPSCI 220");
+            assertThat(warning.normalizedPrerequisiteText()).contains("COMPSCI 187 AND");
+        });
+    }
+
+    @Test
     void parseHandlesRealCatalogStyleBlocks() {
         String text = """
             This course will expose students to programming practices beyond the introductory level. (Gen. Ed. R2) Prerequisite: CICS 110 (previously INFO 190S) or COMPSCI 121 with a grade of C or better. 4 credits.

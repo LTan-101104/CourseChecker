@@ -18,6 +18,13 @@ class RequirementTreeMapperTest {
     private final RequirementTreeMapper mapper = new RequirementTreeMapper();
 
     @Test
+    void nullRequirementInputsMapToNullOutputs() {
+        assertThat(mapper.toDescription(null)).isNull();
+        assertThat(mapper.toResponse(null)).isNull();
+        assertThat(mapper.toEntity(null)).isNull();
+    }
+
+    @Test
     void toDescriptionFormatsNestedCompositeRequirement() {
         AndRequirement root = new AndRequirement();
         root.addChild(new CourseRequirement("COMPSCI 187"));

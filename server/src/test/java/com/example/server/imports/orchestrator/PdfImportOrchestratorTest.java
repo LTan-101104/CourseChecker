@@ -26,6 +26,7 @@ import com.example.server.imports.parser.PrerequisiteParseOutcome;
 import com.example.server.model.ImportJob;
 import com.example.server.model.ImportJobStatus;
 import com.example.server.model.ImportSourceType;
+import com.example.server.model.CourseType;
 import com.example.server.repository.ImportCourseResultRepository;
 import com.example.server.repository.ImportJobRepository;
 import com.example.server.seed.CourseDefinition;
@@ -98,7 +99,8 @@ class PdfImportOrchestratorTest {
             "Programming Methodology",
             4,
             "desc",
-            com.example.server.seed.RequirementDefinition.course("COMPSCI 187")
+            com.example.server.seed.RequirementDefinition.course("COMPSCI 187"),
+            CourseType.CS
         );
         ParsedCourseRecord record = new ParsedCourseRecord(
             courseDefinition,
@@ -179,7 +181,8 @@ class PdfImportOrchestratorTest {
             "Programming Methodology",
             4,
             "desc",
-            null
+            null,
+            CourseType.CS
         );
         ParsedCourseRecord record = new ParsedCourseRecord(
             courseDefinition,

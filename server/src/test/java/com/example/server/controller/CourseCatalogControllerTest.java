@@ -1,5 +1,6 @@
 package com.example.server.controller;
 
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -19,6 +20,7 @@ import com.example.server.dto.RequirementNodeResponse;
 import com.example.server.dto.RequirementNodeType;
 import com.example.server.dto.CourseSummaryDTO;
 import com.example.server.api.ErrorResponseFactory;
+import com.example.server.model.CourseType;
 import com.example.server.security.AdminSecretFilter;
 import com.example.server.security.JwtAuthenticationFilter;
 import com.example.server.service.CourseCatalogService;
@@ -44,15 +46,30 @@ class CourseCatalogControllerTest {
 
     @Test
     void searchCoursesReturnsSummaryJson() throws Exception {
-        when(courseCatalogService.searchCourses("COMPSCI 1")).thenReturn(List.of(
-            new CourseSummaryDTO("COMPSCI 187", "Programming with Data Structures", 4)
+        when(courseCatalogService.searchCourses("COMPSCI 1", null)).thenReturn(List.of(
+            new CourseSummaryDTO("COMPSCI 187", "Programming with Data Structures", 4, CourseType.CS)
         ));
 
         mockMvc.perform(get("/api/v1/courses/search").param("q", "COMPSCI 1"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$[0].courseCode").value("COMPSCI 187"))
             .andExpect(jsonPath("$[0].title").value("Programming with Data Structures"))
-            .andExpect(jsonPath("$[0].credits").value(4));
+            .andExpect(jsonPath("$[0].credits").value(4))
+            .andExpect(jsonPath("$[0].courseType").value("CS"));
+    }
+
+    @Test
+    void searchCoursesPassesOptionalCourseTypeFilter() throws Exception {
+        when(courseCatalogService.searchCourses("", CourseType.MATH)).thenReturn(List.of(
+            new CourseSummaryDTO("MATH 132", "Calculus II", 4, CourseType.MATH)
+        ));
+
+        mockMvc.perform(get("/api/v1/courses/search").param("q", "").param("type", "MATH"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].courseCode").value("MATH 132"))
+            .andExpect(jsonPath("$[0].courseType").value("MATH"));
+
+        verify(courseCatalogService).searchCourses("", CourseType.MATH);
     }
 
     @Test
@@ -68,7 +85,8 @@ class CourseCatalogControllerTest {
                     "COMPSCI 187",
                     List.of()
                 ),
-                "COMPSCI 187 AND (MATH 131 OR MATH 132)"
+                "COMPSCI 187 AND (MATH 131 OR MATH 132)",
+                CourseType.CS
             )
         );
 
@@ -83,6 +101,7 @@ class CourseCatalogControllerTest {
             .andExpect(jsonPath("$.prerequisite.courseCode").value("COMPSCI 187"))
             .andExpect(jsonPath("$.prerequisite.children").isEmpty())
             .andExpect(jsonPath("$.prerequisiteDescription")
-                .value("COMPSCI 187 AND (MATH 131 OR MATH 132)"));
+                .value("COMPSCI 187 AND (MATH 131 OR MATH 132)"))
+            .andExpect(jsonPath("$.courseType").value("CS"));
     }
 }

@@ -124,4 +124,67 @@ class AdminCourseServiceTest {
         ))).isInstanceOf(ValidationException.class)
             .hasMessage("OR nodes require at least 2 children");
     }
+
+    @Test
+    void courseNodesRequireCourseCode() {
+        RequirementNodeRequest invalidPrerequisite = new RequirementNodeRequest(
+            RequirementNodeType.COURSE,
+            " ",
+            List.of()
+        );
+
+        when(courseRepository.existsByCourseCodeIgnoreCase("COMPSCI 220")).thenReturn(false);
+
+        assertThatThrownBy(() -> adminCourseService.createCourse(new CreateCourseRequest(
+            "COMPSCI 220",
+            "Programming Methodology",
+            4,
+            "desc",
+            invalidPrerequisite
+        ))).isInstanceOf(ValidationException.class)
+            .hasMessage("COURSE nodes require a courseCode");
+    }
+
+    @Test
+    void courseNodesRejectChildren() {
+        RequirementNodeRequest invalidPrerequisite = new RequirementNodeRequest(
+            RequirementNodeType.COURSE,
+            "COMPSCI 187",
+            List.of(new RequirementNodeRequest(RequirementNodeType.COURSE, "MATH 131", List.of()))
+        );
+
+        when(courseRepository.existsByCourseCodeIgnoreCase("COMPSCI 220")).thenReturn(false);
+
+        assertThatThrownBy(() -> adminCourseService.createCourse(new CreateCourseRequest(
+            "COMPSCI 220",
+            "Programming Methodology",
+            4,
+            "desc",
+            invalidPrerequisite
+        ))).isInstanceOf(ValidationException.class)
+            .hasMessage("COURSE nodes cannot define children");
+    }
+
+    @Test
+    void compositeNodesRejectCourseCode() {
+        RequirementNodeRequest invalidPrerequisite = new RequirementNodeRequest(
+            RequirementNodeType.AND,
+            "COMPSCI 187",
+            List.of(
+                new RequirementNodeRequest(RequirementNodeType.COURSE, "MATH 131", List.of()),
+                new RequirementNodeRequest(RequirementNodeType.COURSE, "MATH 132", List.of())
+            )
+        );
+
+        when(courseRepository.existsByCourseCodeIgnoreCase("COMPSCI 220")).thenReturn(false);
+
+        assertThatThrownBy(() -> adminCourseService.createCourse(new CreateCourseRequest(
+            "COMPSCI 220",
+            "Programming Methodology",
+            4,
+            "desc",
+            invalidPrerequisite
+        ))).isInstanceOf(ValidationException.class)
+            .hasMessage("AND nodes cannot define courseCode");
+    }
 }

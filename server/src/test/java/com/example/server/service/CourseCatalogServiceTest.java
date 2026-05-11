@@ -10,9 +10,11 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 import java.util.Optional;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -26,6 +28,7 @@ import com.example.server.exception.CourseNotFoundException;
 import com.example.server.model.AndRequirement;
 import com.example.server.model.Course;
 import com.example.server.model.CourseRequirement;
+import com.example.server.model.CourseType;
 import com.example.server.model.OrRequirement;
 import com.example.server.repository.CourseRepository;
 
@@ -48,6 +51,7 @@ class CourseCatalogServiceTest {
     @Test
     void searchCoursesReturnsMappedSummariesAndUsesConfiguredLimit() {
         Course course = new Course("COMPSCI 187", "Programming with Data Structures", 4, "desc");
+        course.setCourseType(CourseType.CS);
 
         when(courseRepository.findByCourseCodeContainingIgnoreCaseOrTitleContainingIgnoreCase(
             any(),
@@ -55,10 +59,10 @@ class CourseCatalogServiceTest {
             any(Pageable.class)
         )).thenReturn(List.of(course));
 
-        List<CourseSummaryDTO> results = courseCatalogService.searchCourses("data structures");
+        List<CourseSummaryDTO> results = courseCatalogService.searchCourses("data structures", null);
 
         assertThat(results).containsExactly(
-            new CourseSummaryDTO("COMPSCI 187", "Programming with Data Structures", 4)
+            new CourseSummaryDTO("COMPSCI 187", "Programming with Data Structures", 4, CourseType.CS)
         );
 
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
@@ -76,8 +80,48 @@ class CourseCatalogServiceTest {
     }
 
     @Test
+    @Tag("unit")
+    void searchCoursesUsesTypeFilterWhenProvided() {
+        Course course = new Course("MATH 132", "Calculus II", 4, "desc");
+        course.setCourseType(CourseType.MATH);
+
+        when(courseRepository.findByTypeAndQuery(
+            ArgumentMatchers.eq(CourseType.MATH),
+            ArgumentMatchers.eq("calculus"),
+            any(Pageable.class)
+        )).thenReturn(List.of(course));
+
+        List<CourseSummaryDTO> results = courseCatalogService.searchCourses(" calculus ", CourseType.MATH);
+
+        assertThat(results).containsExactly(
+            new CourseSummaryDTO("MATH 132", "Calculus II", 4, CourseType.MATH)
+        );
+        verify(courseRepository, never())
+            .findByCourseCodeContainingIgnoreCaseOrTitleContainingIgnoreCase(any(), any(), any(Pageable.class));
+    }
+
+    @Test
+    @Tag("unit")
+    void searchCoursesAllowsBlankQueryWhenTypeFilterIsProvided() {
+        Course course = new Course("STATS 315", "Statistics I", 3, "desc");
+        course.setCourseType(CourseType.STATS);
+
+        when(courseRepository.findByTypeAndQuery(
+            ArgumentMatchers.eq(CourseType.STATS),
+            ArgumentMatchers.eq(""),
+            any(Pageable.class)
+        )).thenReturn(List.of(course));
+
+        List<CourseSummaryDTO> results = courseCatalogService.searchCourses("   ", CourseType.STATS);
+
+        assertThat(results).containsExactly(
+            new CourseSummaryDTO("STATS 315", "Statistics I", 3, CourseType.STATS)
+        );
+    }
+
+    @Test
     void searchCoursesReturnsEmptyListForBlankQuery() {
-        List<CourseSummaryDTO> results = courseCatalogService.searchCourses("   ");
+        List<CourseSummaryDTO> results = courseCatalogService.searchCourses("   ", null);
 
         assertThat(results).isEmpty();
         verify(courseRepository, never())
@@ -92,6 +136,7 @@ class CourseCatalogServiceTest {
             4,
             "Object-oriented design and software engineering."
         );
+        course.setCourseType(CourseType.CS);
 
         AndRequirement root = new AndRequirement();
         root.addChild(new CourseRequirement("COMPSCI 187"));
@@ -140,7 +185,8 @@ class CourseCatalogServiceTest {
                     )
                 )
             ),
-            "COMPSCI 187 AND (MATH 131 OR MATH 132)"
+            "COMPSCI 187 AND (MATH 131 OR MATH 132)",
+            CourseType.CS
         ));
     }
 

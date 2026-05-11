@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.example.server.model.AndRequirement;
 import com.example.server.model.Course;
 import com.example.server.model.CourseRequirement;
+import com.example.server.model.CourseType;
 import com.example.server.repository.CourseRepository;
 import com.example.server.seed.CourseDefinition;
 import com.example.server.seed.RequirementDefinition;
@@ -36,7 +37,8 @@ class CourseImportServiceTest {
             " Programming Methodology ",
             4,
             " Intro to Java ",
-            RequirementDefinition.course("compsci 187")
+            RequirementDefinition.course("compsci 187"),
+            CourseType.CS
         );
 
         when(courseRepository.findByCourseCodeIgnoreCase("COMPSCI 220")).thenReturn(Optional.empty());
@@ -64,7 +66,8 @@ class CourseImportServiceTest {
                     RequirementDefinition.course("math 131"),
                     RequirementDefinition.course("math 132")
                 )
-            )
+            ),
+            CourseType.CS
         );
 
         when(courseRepository.findByCourseCodeIgnoreCase("COMPSCI 220")).thenReturn(Optional.of(existing));
@@ -89,7 +92,8 @@ class CourseImportServiceTest {
             "Programming Methodology",
             4,
             "New Description",
-            null
+            null,
+            CourseType.CS
         );
 
         when(courseRepository.findByCourseCodeIgnoreCase("COMPSCI 220")).thenReturn(Optional.of(existing));
@@ -99,5 +103,49 @@ class CourseImportServiceTest {
 
         assertThat(result.action()).isEqualTo(ImportAction.UPDATED);
         assertThat(existing.getPrerequisite()).isEqualTo(originalPrerequisite);
+    }
+
+    @Test
+    void importCourseClearsExistingPrerequisiteWhenPreserveIsFalse() {
+        Course existing = new Course("COMPSCI 220", "Old Title", 3, "Old Description");
+        existing.setPrerequisite(new CourseRequirement("MATH 131"));
+
+        CourseDefinition definition = new CourseDefinition(
+            "COMPSCI 220",
+            "Programming Methodology",
+            4,
+            "New Description",
+            null,
+            CourseType.CS
+        );
+
+        when(courseRepository.findByCourseCodeIgnoreCase("COMPSCI 220")).thenReturn(Optional.of(existing));
+        when(courseRepository.save(any(Course.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        courseImportService.importCourse(definition);
+
+        assertThat(existing.getPrerequisite()).isNull();
+    }
+
+    @Test
+    void importCourseKeepsExistingCourseTypeWhenDefinitionTypeIsMissing() {
+        Course existing = new Course("COMPSCI 220", "Old Title", 3, "Old Description");
+        existing.setCourseType(CourseType.CS);
+
+        CourseDefinition definition = new CourseDefinition(
+            "COMPSCI 220",
+            "Programming Methodology",
+            4,
+            "New Description",
+            null,
+            null
+        );
+
+        when(courseRepository.findByCourseCodeIgnoreCase("COMPSCI 220")).thenReturn(Optional.of(existing));
+        when(courseRepository.save(any(Course.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        courseImportService.importCourse(definition);
+
+        assertThat(existing.getCourseType()).isEqualTo(CourseType.CS);
     }
 }
